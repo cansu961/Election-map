@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ВЫБОРЫ</title>
+<link rel="stylesheet" href="../CSS/portal.css">
+<style>
+* { font-family: Calibri,'Trebuchet MS',Arial,sans-serif; box-sizing: border-box; }
+
+/* Корень — независим от portal.css min-height */
+#root { position:fixed; inset:0; display:flex; flex-direction:column; z-index:1; background:var(--body-bg); }
+
+/* Выравниваем отступ кнопок навигации с хедером */
+.header-right { gap: 10px; }
+
+/* ── Ряды кнопок ── */
+.crow { display:flex; align-items:center; flex-wrap:nowrap; height:36px; padding:0 18px; gap:5px; background:var(--row-bg); border-bottom:1px solid rgba(0,0,0,.06); overflow-x:auto; overflow-y:hidden; flex-shrink:0; transition:background .3s; scrollbar-width:thin; }
+.crow::-webkit-scrollbar { height:3px; }
+.crow::-webkit-scrollbar-thumb { background:rgba(0,0,0,.15); border-radius:2px; }
+.crow-off { display:none !important; }
+.nbtn { display:inline-flex; align-items:center; height:24px; padding:0 9px; background:var(--btn-bg); color:var(--btn-text); border:1.5px solid transparent; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.2px; text-transform:uppercase; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .13s; }
+.nbtn:hover { border-color:var(--btn-hover-br); color:var(--btn-act-bg); }
+.nbtn.on    { background:var(--btn-act-bg); color:var(--btn-act-text); border-color:var(--btn-act-bg); }
+.lst { display:none; }
+
+/* ── Рабочая область ── */
+#app { flex:1; display:flex; min-height:0; overflow:hidden; position:relative; }
+
+/* ══════════════════════════════════════════
+   ЛЕВАЯ ПАНЕЛЬ
+══════════════════════════════════════════ */
+#color-panel { width:320px; min-width:320px; max-width:320px; background:var(--tile-bg,#fff); border-right:1px solid rgba(0,0,0,.09); display:flex; flex-direction:column; overflow:hidden; z-index:10; flex-shrink:0; transition:background .3s; }
+
+/* Ошибка загрузки CSV */
+.load-err { padding:14px 18px; background:#FFF3CD; border-bottom:2px solid #FFE082; font-size:13px; color:#7B4F00; line-height:1.6; display:none; }
+.load-err.on { display:block; }
+
+/* Заглушка */
+.panel-placeholder { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:24px; text-align:center; color:var(--btn-text); opacity:.3; pointer-events:none; }
+.panel-placeholder .pp-ic { font-size:52px; }
+.panel-placeholder .pp-tx { font-size:18px; font-weight:700; line-height:1.5; }
+
+/* Секции */
+.panel-section { padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.07); flex-shrink:0; }
+.panel-section h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--btn-text); opacity:.5; margin-bottom:11px; }
+
+/* Легенда */
+.legend-bar { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.legend-gradient { flex:1; height:16px; border-radius:8px; border:1px solid rgba(0,0,0,.08); transition:background .3s; }
+.legend-labels { display:flex; justify-content:space-between; font-size:13px; color:var(--btn-text); opacity:.55; font-weight:600; }
+.legend-ticks { display:flex; justify-content:space-between; margin-top:5px; margin-bottom:8px; }
+.legend-tick { font-size:12px; color:var(--btn-text); opacity:.5; }
+.legend-nodata { display:flex; align-items:center; gap:8px; margin-top:7px; font-size:13px; color:var(--btn-text); opacity:.5; }
+.legend-nodata-box { width:20px; height:14px; border-radius:4px; background:#D1D5DB; border:1px solid rgba(0,0,0,.08); flex-shrink:0; }
+
+/* Статистика */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.stat-box { background:var(--row-bg); border:1px solid rgba(0,0,0,.07); border-radius:8px; padding:9px 10px; min-width:0; }
+.stat-label { font-size:11px; color:var(--btn-text); opacity:.5; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.stat-value { font-size:20px; font-weight:800; color:var(--btn-text); margin-top:1px; letter-spacing:-.5px; }
+.stat-sub { font-size:11px; color:var(--btn-text); opacity:.45; margin-top:2px; white-space:normal; overflow:hidden; word-break:break-word; line-height:1.3; }
+
+/* Поиск и список */
+.search-box { padding:10px 16px; border-bottom:1px solid rgba(0,0,0,.07); flex-shrink:0; }
+.search-box input { width:100%; padding:8px 12px; border:1px solid rgba(0,0,0,.11); border-radius:8px; font-size:14px; background:var(--row-bg); color:var(--btn-text); outline:none; }
+.search-box input:focus { border-color:var(--btn-act-bg); }
+.region-list-wrap { flex:1; overflow-y:auto; padding:6px 0; scrollbar-width:auto; }
+.region-list-wrap::-webkit-scrollbar { width:8px; }
+.region-list-wrap::-webkit-scrollbar-track { background:rgba(0,0,0,.04); }
+.region-list-wrap::-webkit-scrollbar-thumb { background:rgba(0,0,0,.25); border-radius:4px; }
+.region-list-wrap::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,.4); }
+.rli { display:flex; align-items:center; gap:10px; padding:7px 16px; cursor:pointer; transition:background .12s; }
+.rli:hover { background:var(--row-bg); }
+.rli.active { background:var(--btn-act-bg); }
+.rli.active .rli-name, .rli.active .rli-pct { color:var(--btn-act-text) !important; }
+.rli-dot { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+.rli-name { font-size:13px; flex:1; font-weight:500; line-height:1.3; color:var(--btn-text); }
+.rli-pct { font-size:13px; font-weight:700; color:var(--btn-act-bg); flex-shrink:0; letter-spacing:-.3px; }
+.rli-nodata { font-size:12px; color:var(--btn-text); opacity:.35; flex-shrink:0; }
+
+/* ══════════════════════════════════════════
+   КАРТА
+══════════════════════════════════════════ */
+#map-area { flex:1; overflow:hidden; position:relative; background:var(--body-bg); display:flex; align-items:center; justify-content:center; transition:background .3s; min-width:0; }
+#map-container { display:grid; gap:3px; transition:transform .25s ease; transform-origin:center center; }
+.map-cell { width:56px; height:56px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; line-height:1.1; text-align:center; padding:0 3px; overflow:hidden; word-break:break-word; cursor:pointer; transition:all .15s ease; position:relative; color:white; text-shadow:none; user-select:none; }
+.map-cell:hover    { transform:scale(1.12); z-index:10; box-shadow:0 4px 16px rgba(0,0,0,.22); }
+.map-cell.selected { transform:scale(1.15); z-index:20; box-shadow:0 6px 24px rgba(21,101,192,.45); outline:3px solid white; outline-offset:1px; }
+.map-cell.dim      { opacity:.45; }
+.map-cell.no-data  { color:rgba(0,0,0,.4); text-shadow:none; }
+.tooltip { position:fixed; background:rgba(27,35,54,.95); color:#fff; padding:8px 12px; border-radius:8px; font-size:13px; font-weight:600; pointer-events:none; z-index:9999; white-space:nowrap; opacity:0; transition:opacity .12s; backdrop-filter:blur(4px); }
+.tooltip.visible { opacity:1; }
+.tooltip .tt-pct { font-size:17px; font-weight:800; letter-spacing:-.5px; margin-top:2px; }
+/* Тултип: цвет значения — тема Мятная (по умолчанию зелёный) */
+.tooltip .tt-pct.high{color:#4dd0c4;} .tooltip .tt-pct.mid{color:#80cbc4;} .tooltip .tt-pct.low{color:#b2dfdb;}
+/* Тема Кобальт */
+.theme-mint .tooltip .tt-pct.high{color:#90CAF9;} .theme-mint .tooltip .tt-pct.mid{color:#64B5F6;} .theme-mint .tooltip .tt-pct.low{color:#BBDEFB;}
+/* Тема Графит */
+.theme-glass .tooltip .tt-pct.high{color:#69db7c;} .theme-glass .tooltip .tt-pct.mid{color:#ffd43b;} .theme-glass .tooltip .tt-pct.low{color:#ff6b6b;}
+.tooltip .tt-sub { font-size:12px; font-weight:500; color:rgba(255,255,255,.55); margin-top:3px; }
+.zoom-controls { position:absolute; bottom:50px; right:20px; display:flex; flex-direction:column; gap:4px; z-index:50; }
+.zoom-btn { width:36px; height:36px; background:var(--tile-bg,#fff); border:1px solid rgba(0,0,0,.12); border-radius:8px; cursor:pointer; font-size:18px; font-weight:600; color:var(--btn-text,#333); display:flex; align-items:center; justify-content:center; box-shadow:0 1px 3px rgba(0,0,0,.09); transition:background .13s; }
+.zoom-btn:hover { background:var(--row-bg); }
+
+/* ══════════════════════════════════════════
+   ПРАВАЯ ИНФО-ПАНЕЛЬ
+   Находится в потоке flexbox (не absolute),
+   раздвигает карту влево при открытии.
+══════════════════════════════════════════ */
+#info-panel { width:0; min-width:0; background:var(--tile-bg,#fff); border-left:1px solid rgba(0,0,0,.09); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; z-index:30; transition:width .25s ease, min-width .25s ease; }
+#info-panel.open { width:300px; min-width:300px; }
+.info-panel-inner { width:300px; min-width:300px; display:flex; flex-direction:column; height:100%; overflow:hidden; }
+.info-header { padding:18px 18px 14px; border-bottom:1px solid rgba(0,0,0,.07); display:flex; align-items:flex-start; justify-content:space-between; background:var(--tile-bg,#fff); flex-shrink:0; }
+.info-header h2 { font-size:16px; font-weight:800; line-height:1.3; flex:1; color:var(--btn-text); letter-spacing:-.2px; }
+.abbr-badge { display:inline-block; font-size:13px; padding:3px 9px; border-radius:5px; background:var(--btn-act-bg); color:var(--btn-act-text); font-weight:700; margin-top:5px; }
+.close-btn { width:32px; height:32px; background:var(--row-bg); border:none; border-radius:8px; font-size:18px; cursor:pointer; color:var(--btn-text); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:10px; }
+.close-btn:hover { background:var(--btn-bg); }
+.info-body { flex:1; overflow-y:auto; padding:16px; }
+.info-body::-webkit-scrollbar{width:5px;} .info-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.14);border-radius:4px;}
+/* Блок с большой цифрой — цвет по теме */
+.turnout-display { background:linear-gradient(135deg,#00838f,#00acc1); border-radius:14px; padding:22px 18px; text-align:center; color:white; margin-bottom:12px; }
+.theme-mint  .turnout-display { background:linear-gradient(135deg,#1565C0,#1976D2); }
+.theme-glass .turnout-display { background:linear-gradient(135deg,rgba(50,50,55,0.9),rgba(38,38,42,0.95)) !important; border:1px solid rgba(255,255,255,0.1); }
+.turnout-display .td-label { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:.75; }
+.turnout-display .td-value { font-size:52px; font-weight:800; letter-spacing:-2px; line-height:1; margin:8px 0 4px; }
+.turnout-display .td-sub { font-size:13px; opacity:.7; }
+.info-metric { background:var(--row-bg); border:1px solid rgba(0,0,0,.07); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+.info-metric .im-label { font-size:13px; color:var(--btn-text); opacity:.55; font-weight:600; }
+.info-metric .im-value { font-size:17px; font-weight:800; margin-top:3px; color:var(--btn-text); }
+.info-metric .im-bar { margin-top:8px; height:5px; background:rgba(0,0,0,.08); border-radius:3px; overflow:hidden; }
+/* Полоска прогресса — цвет по теме */
+.info-metric .im-bar-fill { height:100%; background:#00838f; border-radius:3px; transition:width .5s ease; }
+.theme-mint  .info-metric .im-bar-fill { background:#1565C0; }
+.theme-glass .info-metric .im-bar-fill { background:rgba(255,255,255,0.35) !important; }
+.rank-badge { display:inline-flex; align-items:center; gap:5px; background:var(--btn-act-bg); color:var(--btn-act-text); border-radius:20px; padding:5px 13px; font-size:13px; font-weight:700; margin-bottom:12px; }
+.no-data-panel { background:var(--row-bg); border:1.5px dashed rgba(0,0,0,.12); border-radius:14px; padding:28px 20px; text-align:center; }
+.no-data-panel .nd-icon{font-size:30px;margin-bottom:8px;}
+.no-data-panel .nd-text{font-size:15px;color:var(--btn-text);opacity:.5;font-weight:700;}
+.no-data-panel .nd-sub{font-size:13px;color:var(--btn-text);opacity:.38;margin-top:5px;line-height:1.4;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade-in{animation:fadeIn .25s ease;}
+
+/* ── Белый фон карты ── */
+#map-area { background: #ffffff !important; }
+.theme-glass #map-area { background: #1c1c1e !important; }
+
+/* ── Графит: iOS парящие элементы ── */
+.theme-glass #color-panel { background: rgba(28,28,30,0.92) !important; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); }
+.theme-glass .panel-section { border-bottom-color: rgba(255,255,255,0.06); }
+.theme-glass .panel-section h3 { color:#ebebf5; opacity:.45; }
+.theme-glass .stat-box { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.08); }
+.theme-glass .stat-label { color:#ebebf5 !important; opacity:.5; }
+.theme-glass .stat-value { color:#f2f2f7 !important; }
+.theme-glass .stat-sub   { color:#ebebf5 !important; opacity:.55; }
+.theme-glass .search-box input { background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.12); color:#f2f2f7; }
+.theme-glass .search-box input::placeholder { color:rgba(242,242,247,0.35); }
+.theme-glass .rli-name   { color:#f2f2f7 !important; }
+.theme-glass .rli-pct    { color:#69db7c !important; }
+.theme-mint  .rli-pct    { color:#1565C0 !important; }
+.theme-glass .rli-nodata { color:rgba(242,242,247,0.3) !important; }
+.theme-glass .rli:hover  { background:rgba(255,255,255,0.06); }
+.theme-glass .legend-tick { color:#ebebf5 !important; opacity:.5; }
+.theme-glass .legend-nodata { color:#ebebf5 !important; opacity:.45; }
+/* Парящие ряды навигации */
+.theme-glass .crow { background:rgba(28,28,30,0.88) !important; border-bottom-color:rgba(255,255,255,0.05); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+.theme-glass .nbtn { background:rgba(255,255,255,0.09) !important; color:#f2f2f7 !important; border-color:rgba(255,255,255,0.12); }
+.theme-glass .nbtn:hover { border-color:rgba(255,255,255,0.40) !important; }
+.theme-glass .nbtn.on { background:rgba(255,255,255,0.22) !important; color:#ffffff !important; border-color:rgba(255,255,255,0.50) !important; }
+/* Парящие зум-кнопки */
+.theme-glass .zoom-btn { background:rgba(44,44,46,0.85) !important; border-color:rgba(255,255,255,0.12); color:#f2f2f7 !important; backdrop-filter:blur(10px); }
+.theme-glass .zoom-btn:hover { background:rgba(72,72,74,0.9) !important; }
+/* Инфо-панель */
+.theme-glass #info-panel { background:rgba(28,28,30,0.94) !important; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-left-color:rgba(255,255,255,0.08); }
+.theme-glass .info-header { background:rgba(28,28,30,0.94) !important; border-bottom-color:rgba(255,255,255,0.06); }
+.theme-glass .info-header h2 { color:#f2f2f7 !important; }
+.theme-glass .abbr-badge { background:#48484a !important; }
+.theme-glass .close-btn { background:rgba(255,255,255,0.08) !important; color:#f2f2f7 !important; }
+.theme-glass .info-metric { background:rgba(255,255,255,0.06) !important; border-color:rgba(255,255,255,0.07); }
+.theme-glass .info-metric .im-label { color:#ebebf5 !important; }
+.theme-glass .info-metric .im-value { color:#f2f2f7 !important; }
+.theme-glass .no-data-panel { background:rgba(255,255,255,0.05) !important; border-color:rgba(255,255,255,0.12); }
+.theme-glass .no-data-panel .nd-text { color:#f2f2f7 !important; opacity:.6; }
+.theme-glass .no-data-panel .nd-sub  { color:#ebebf5 !important; opacity:.4; }
+/* Тултип */
+.theme-glass .tooltip { background:rgba(44,44,46,0.95) !important; }
+/* Панель подсказка */
+.theme-glass .panel-placeholder { color:#f2f2f7 !important; }
+/* Футер */
+.theme-glass .footer { color:rgba(235,235,245,0.55) !important; }
+</style>
+</head>
+<body class="theme-current">
+<div id="root">
+
+  <header class="header">
+    <div class="header-left">
+      <a href="https://google.com" class="header-btn">Совет Федерации</a>
+      <a href="https://google.com" class="header-btn">Информационно-аналитическое управление</a>
+      <a href="../index.html" class="header-btn">Назад</a>
+      <span class="header-title">ВЫБОРЫ</span>
+    </div>
+    <div class="header-right">
+      <button class="header-btn report-btn" id="emailBtn" onclick="emailReport()" title="Отправить отчёт по email" style="display:none;align-items:center;gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+        Отправить
+      </button>
+      <button class="header-btn report-btn" id="printBtn" onclick="printReport()" title="Печать отчёта по региону" style="display:none;align-items:center;gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Печать
+      </button>
+      <div class="theme-switcher">
+        <button class="theme-toggle-btn" id="themeToggle">&#9682; ТЕМЫ</button>
+        <div class="theme-dropdown" id="themeDropdown">
+          <button class="theme-option is-active" data-theme="theme-current"><span class="swatch sw-current"></span>Мятная</button>
+          <button class="theme-option" data-theme="theme-mint"><span class="swatch sw-mint"></span>Кобальт</button>
+          <button class="theme-option" data-theme="theme-glass"><span class="swatch sw-glass"></span>Графит</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!--
+  ══════════════════════════════════════════════════════════════════
+  РЯДЫ КНОПОК
+
+  data-val на каждой кнопке = ключ, который сравнивается
+  со значением соответствующей колонки в vybory_data.csv:
+
+  Ряд 1 (data-key="type"):
+    data-val → колонка "type"
+    Ключи: "Президент" | "Государственная Дума" |
+           "Главы регионов" | "Региональные парламенты"
+
+  Ряд 2 (data-key="year"):
+    data-val → колонка "year"
+    Для Президента:            9 кнопок
+    Для Гос. Думы:             8 кнопок
+    Для Глав регионов:        26 кнопок
+    Для Рег. парламентов:     26 кнопок
+
+  Ряд 3 (data-key="view"):
+    data-val → имя колонки данных в CSV
+    Ключи: "result" | "turnout"
+  ══════════════════════════════════════════════════════════════════
+  -->
+  <div id="nav-rows">
+
+    <!-- РЯД 1 — тип (4 ключа) -->
+    <div class="crow" data-level="1">
+      <button class="nbtn" data-show="r-prez" data-key="type" data-val="Президент">Президент</button>
+      <button class="nbtn" data-show="r-duma" data-key="type" data-val="Государственная Дума">Государственная Дума</button>
+      <button class="nbtn" data-show="r-glav" data-key="type" data-val="Главы регионов">Главы регионов</button>
+      <button class="nbtn" data-show="r-parl" data-key="type" data-val="Региональные парламенты">Региональные парламенты</button>
+    </div>
+
+    <!-- РЯД 2а — Президент (9 ключей) -->
+    <div class="crow crow-off" id="r-prez" data-level="2">
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="12 июня 1991">12 июня 1991</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="16 июня 1996 (1 тур)">16 июня 1996 (1 тур)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="3 июля 1996 (2 тур)">3 июля 1996 (2 тур)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="26 марта 2000">26 марта 2000</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="14 марта 2004">14 марта 2004</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2 марта 2008">2 марта 2008</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="4 марта 2012">4 марта 2012</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="18 марта 2018">18 марта 2018</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="15–17 марта 2024">15–17 марта 2024</button>
+    </div>
+
+    <!-- РЯД 2б — Государственная Дума (8 ключей) -->
+    <div class="crow crow-off" id="r-duma" data-level="2">
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="12 декабря 1993 (I созыв)">12 декабря 1993 (I созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="17 декабря 1995 (II созыв)">17 декабря 1995 (II созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="19 декабря 1999 (III созыв)">19 декабря 1999 (III созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="7 декабря 2003 (IV созыв)">7 декабря 2003 (IV созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2 декабря 2007 (V созыв)">2 декабря 2007 (V созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="4 декабря 2011 (VI созыв)">4 декабря 2011 (VI созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="18 сентября 2016 (VII созыв)">18 сентября 2016 (VII созыв)</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="19 сентября 2021 (VIII созыв)">19 сентября 2021 (VIII созыв)</button>
+    </div>
+
+    <!-- РЯД 2в — Главы регионов (26 ключей) -->
+    <div class="crow crow-off" id="r-glav" data-level="2">
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2000">2000</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2001">2001</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2002">2002</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2003">2003</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2004">2004</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2005">2005</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2006">2006</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2007">2007</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2008">2008</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2009">2009</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2010">2010</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2011">2011</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2012">2012</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2013">2013</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2014">2014</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2015">2015</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2016">2016</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2017">2017</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2018">2018</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2019">2019</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2020">2020</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2021">2021</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2022">2022</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2023">2023</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2024">2024</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2025">2025</button>
+    </div>
+
+    <!-- РЯД 2г — Региональные парламенты (26 ключей) -->
+    <div class="crow crow-off" id="r-parl" data-level="2">
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2000">2000</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2001">2001</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2002">2002</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2003">2003</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2004">2004</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2005">2005</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2006">2006</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2007">2007</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2008">2008</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2009">2009</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2010">2010</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2011">2011</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2012">2012</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2013">2013</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2014">2014</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2015">2015</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2016">2016</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2017">2017</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2018">2018</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2019">2019</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2020">2020</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2021">2021</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2022">2022</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2023">2023</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2024">2024</button>
+      <button class="nbtn" data-show="r-view" data-key="year" data-val="2025">2025</button>
+    </div>
+
+    <!-- РЯД 3 — показатель (2 ключа = имена колонок CSV) -->
+    <div class="crow crow-off" id="r-view" data-level="3">
+      <button class="nbtn" data-key="view" data-val="result">РЕЗУЛЬТАТЫ</button>
+      <button class="nbtn" data-key="view" data-val="turnout">ЯВКА</button>
+      <span class="lst" id="lst"></span>
+    </div>
+
+  </div>
+
+  <div id="app">
+
+    <!-- Левая панель -->
+    <div id="color-panel">
+      <div class="load-err" id="loadErr"></div>
+
+      <div class="panel-placeholder" id="panelHint">
+        <div class="pp-ic">🗳</div>
+        <div class="pp-tx">Выберите тип выборов,<br>год и показатель</div>
+      </div>
+
+      <div id="panelBody" style="display:none; flex-direction:column; height:100%; overflow:hidden;">
+        <div class="panel-section">
+          <h3 id="leg-title">Шкала явки</h3>
+          <div class="legend-bar"><div class="legend-gradient" id="leg-grad"></div></div>
+          <div class="legend-labels"><span>Низкая</span><span>Высокая</span></div>
+          <div class="legend-ticks">
+            <span class="legend-tick" id="leg-t1">—</span>
+            <span class="legend-tick" id="leg-t2">—</span>
+            <span class="legend-tick" id="leg-t3">—</span>
+          </div>
+          <div class="legend-nodata"><div class="legend-nodata-box"></div><span>Нет данных</span></div>
+        </div>
+        <div class="panel-section">
+          <h3>Итоги по России</h3>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="stat-label" id="lbl-avg">Явка</div><div class="stat-value" id="stat-avg">—</div><div class="stat-sub">средняя по регионам</div></div>
+            <div class="stat-box"><div class="stat-label">Мин.</div><div class="stat-value" id="stat-min">—</div><div class="stat-sub" id="stat-min-r">—</div></div>
+            <div class="stat-box"><div class="stat-label">Макс.</div><div class="stat-value" id="stat-max">—</div><div class="stat-sub" id="stat-max-r">—</div></div>
+            <div class="stat-box"><div class="stat-label">Регионов</div><div class="stat-value" id="stat-cnt">—</div><div class="stat-sub" id="stat-cnt-s">с данными</div></div>
+          </div>
+        </div>
+        <div class="search-box"><input type="text" id="search" placeholder="Поиск региона…"></div>
+        <div class="region-list-wrap"><div id="region-list"></div></div>
+      </div>
+    </div>
+
+    <!-- Карта -->
+    <div id="map-area">
+      <div id="map-container"></div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomMap(1)">+</button>
+        <button class="zoom-btn" onclick="zoomMap(-1)">−</button>
+        <button class="zoom-btn" onclick="zoomMap(0)" title="Вписать в экран" style="font-size:12px;">⟳</button>
+      </div>
+    </div>
+
+    <!-- Правая инфо-панель -->
+    <div id="info-panel">
+      <div class="info-panel-inner">
+        <div class="info-header">
+          <div><h2 id="info-title">—</h2><div class="abbr-badge" id="info-abbr">—</div></div>
+          <button class="close-btn" onclick="closeInfo()">✕</button>
+        </div>
+        <div class="info-body" id="info-body"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">&copy; <span id="yr" style="padding:0 6px;"></span> Информационно-аналитическое управление</footer>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<script src="../JS/theme.js"></script>
+<script src="vybory_data.js"></script>
+
+<!-- html2canvas для рендера карты в PNG -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПОК ПЕЧАТЬ / ОТПРАВИТЬ
+   Кнопки появляются только когда выбраны все 3 ряда кнопок
+   (type + year + field). Регион выбирать не обязательно.
+══════════════════════════════════════════════════════════════ */
+function updateReportButtons() {
+    var show = !!(window.S && window.S.type && window.S.year && window.S.field);
+    var btns = document.querySelectorAll('.report-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].style.display = show ? 'inline-flex' : 'none';
+    }
+}
+
+/* Вешаем хук на applyFilter — он вызывается при выборе 3-го ряда */
+document.addEventListener('DOMContentLoaded', function() {
+    var orig = window.applyFilter;
+    if (typeof orig === 'function') {
+        window.applyFilter = function() { orig(); updateReportButtons(); };
+    }
+    /* Также отслеживаем сброс (клик на уже активную кнопку) */
+    var navRows = document.getElementById('nav-rows');
+    if (navRows) {
+        navRows.addEventListener('click', function() {
+            setTimeout(updateReportButtons, 50);
+        });
+    }
+    updateReportButtons();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   СБОР ДАННЫХ ДЛЯ ОТЧЁТА
+   Возвращает объект со всем необходимым для построения HTML-отчёта.
+   Если регион не выбран — данные по нему будут null.
+══════════════════════════════════════════════════════════════ */
+function collectReportData() {
+    if (!window.S || !window.S.type || !window.S.year || !window.S.field) {
+        alert('Выберите тип выборов, год и показатель.');
+        return null;
+    }
+
+    var key = window.selectedKey || null;
+    var reg = null;
+    if (key) {
+        for (var i = 0; i < window.REGIONS.length; i++) {
+            if (window.REGIONS[i].key === key) { reg = window.REGIONS[i]; break; }
+        }
+    }
+
+    var rng   = window.getRange ? window.getRange() : {min:0,max:100,avg:0,count:0};
+    var v     = (key && window.DATA) ? window.DATA[key] : null;
+    var isRes = window.S.field === 'result';
+    var lbl   = isRes ? 'Результат' : 'Явка';
+
+    function fmtPct(x) { return (x !== null && x !== undefined) ? parseFloat(x).toFixed(1) + '%' : 'н/д'; }
+
+    /* Ранг */
+    var wd = [];
+    for (var i = 0; i < window.REGIONS.length; i++) {
+        var dv = window.DATA[window.REGIONS[i].key];
+        if (dv !== null && dv !== undefined) wd.push(window.REGIONS[i]);
+    }
+    wd.sort(function(a,b){ return window.DATA[b.key] - window.DATA[a.key]; });
+    var rank = 0;
+    if (key) {
+        for (var i = 0; i < wd.length; i++) { if (wd[i].key === key) { rank = i+1; break; } }
+    }
+
+    var diff = (v !== null) ? (v - rng.avg) : null;
+    var dStr = diff !== null ? (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%' : 'н/д';
+    var dColor = (diff !== null && diff >= 0) ? '#1565C0' : '#C62828';
+
+    var minR = wd.length ? wd[wd.length-1] : null;
+    var maxR = wd.length ? wd[0] : null;
+
+    var normV = (v !== null && rng.max > rng.min) ? ((v - rng.min)/(rng.max - rng.min)*100).toFixed(1) : 0;
+    var normA = (rng.max > rng.min) ? ((rng.avg - rng.min)/(rng.max - rng.min)*100).toFixed(1) : 0;
+    var markerLeft = (v !== null && rng.max > rng.min)
+        ? ((v - rng.min)/(rng.max - rng.min)*100).toFixed(1) : null;
+
+    /* Градиент шкалы: 8 точек, цвета из текущей темы */
+    var _b = document.body;
+    var gradStops = [];
+    var _isGlass = _b.classList.contains('theme-glass');
+    for (var s = 0; s <= 7; s++) {
+        var t = s/7;
+        var cr, cg, cb;
+        if (_isGlass) {
+            if (t <= 0.5) { var tt=t*2; cr=255; cg=Math.round(59+(204-59)*tt); cb=Math.round(48+(0-48)*tt); }
+            else          { var tt=(t-0.5)*2; cr=Math.round(255+(52-255)*tt); cg=Math.round(204+(199-204)*tt); cb=Math.round(0+(89-0)*tt); }
+        } else {
+            var _lo, _hi;
+            if (_b.classList.contains('theme-mint')) { _lo=[187,222,251]; _hi=[21,101,192]; }
+            else                                     { _lo=[178,235,242]; _hi=[0,77,90]; }
+            cr=Math.round(_lo[0]+(_hi[0]-_lo[0])*t); cg=Math.round(_lo[1]+(_hi[1]-_lo[1])*t); cb=Math.round(_lo[2]+(_hi[2]-_lo[2])*t);
+        }
+        gradStops.push('rgb('+cr+','+cg+','+cb+') '+(t*100).toFixed(0)+'%');
+    }
+    var gradCSS = 'linear-gradient(to right,' + gradStops.join(',') + ')';
+
+    var now = new Date();
+    var dateStr = now.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' +
+                  now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+
+    return {
+        reg: reg, key: key, v: v, lbl: lbl, isRes: isRes,
+        rng: rng, rank: rank, wd: wd,
+        diff: diff, dStr: dStr, dColor: dColor,
+        minR: minR, maxR: maxR,
+        normV: normV, normA: normA, markerLeft: markerLeft,
+        gradCSS: gradCSS, dateStr: dateStr,
+        fmtPct: fmtPct
+    };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   РЕНДЕР КАРТЫ В PNG
+   Возвращает Promise<dataURL>
+══════════════════════════════════════════════════════════════ */
+function renderMapPng() {
+    var mc = document.getElementById('map-container');
+    var oldTransform = mc.style.transform;
+    mc.style.transform = 'none';
+    return html2canvas(mc, {
+        scale: 2, backgroundColor: '#f8f9fa', useCORS: true, logging: false
+    }).then(function(canvas) {
+        mc.style.transform = oldTransform;
+        return canvas.toDataURL('image/png');
+    });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ПОСТРОЕНИЕ HTML ОТЧЁТА
+   Кириллица рендерится браузером — никаких проблем с кодировкой.
+══════════════════════════════════════════════════════════════ */
+function buildReportHTML(d, mapDataUrl) {
+    var regName  = d.reg ? d.reg.name : '(регион не выбран)';
+    var rankStr  = (d.rank && d.wd.length) ? d.rank + ' из ' + d.wd.length : 'н/д';
+    var minName  = d.minR ? d.minR.name : '—';
+    var maxName  = d.maxR ? d.maxR.name : '—';
+    var minVal   = d.fmtPct(d.minR ? window.DATA[d.minR.key] : null);
+    var maxVal   = d.fmtPct(d.maxR ? window.DATA[d.maxR.key] : null);
+    var avgStr   = d.fmtPct(d.rng.avg);
+    var markerHTML = '';
+    if (d.markerLeft !== null) {
+        markerHTML = '<div style="position:absolute;left:calc('+d.markerLeft+'% - 7px);top:-5px;width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid #1565C0;box-shadow:0 1px 4px rgba(0,0,0,.3);"></div>' +
+            '<div style="position:absolute;left:'+d.markerLeft+'%;transform:translateX(-50%);top:-18px;font-size:8pt;font-weight:700;color:#1565C0;">'+d.fmtPct(d.v)+'</div>';
+    }
+
+    return '<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">' +
+    '<title>Отчёт — ' + regName + '</title>' +
+    '<style>' +
+    '@page{size:A4 portrait;margin:20mm;}' +
+    '*{font-family:"Arial Narrow",Arial,sans-serif;box-sizing:border-box;margin:0;padding:0;}' +
+    'body{background:#fff;color:#1a1a1a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+    '.page{width:170mm;margin:0 auto;padding:0;}' +
+    'h1{font-size:15pt;font-weight:700;color:#1547A1;line-height:1.3;margin-bottom:4pt;}' +
+    'h2{font-size:13pt;font-weight:700;color:#1a1a1a;margin-bottom:8pt;}' +
+    '.divider{border:none;border-top:1.5px solid #1565C0;margin:8pt 0;}' +
+    '.divider-light{border:none;border-top:0.5px solid #c8d8ea;margin:8pt 0;}' +
+    '.map-wrap{width:170mm;text-align:center;margin-bottom:8pt;}' +
+    '.map-wrap img{width:170mm;height:auto;max-height:105mm;object-fit:contain;display:block;}' +
+    '.main-card{background:#1565C0;border-radius:6pt;padding:12pt 14pt;color:#fff;margin-bottom:8pt;display:flex;align-items:center;justify-content:space-between;}' +
+    '.main-card .mc-label{font-size:8pt;text-transform:uppercase;letter-spacing:1px;opacity:.75;margin-bottom:2pt;}' +
+    '.main-card .mc-value{font-size:26pt;font-weight:700;letter-spacing:-1px;line-height:1;}' +
+    '.main-card .mc-right{text-align:right;font-size:8.5pt;opacity:.75;max-width:100mm;}' +
+    '.cards{display:grid;grid-template-columns:1fr 1fr;gap:6pt;margin-bottom:8pt;}' +
+    '.card{background:#f0f3f8;border-radius:5pt;padding:7pt 9pt;}' +
+    '.card .c-label{font-size:7pt;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:3pt;}' +
+    '.card .c-value{font-size:15pt;font-weight:700;color:#1a1a1a;line-height:1.1;}' +
+    '.card .c-value.accent{color:#1565C0;}' +
+    '.card .c-sub{font-size:7.5pt;color:#666;margin-top:2pt;line-height:1.3;}' +
+    '.scale-wrap{margin-bottom:10pt;}' +
+    '.scale-title{font-size:7.5pt;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:5pt;}' +
+    '.scale-bar-outer{position:relative;margin:0 10mm;padding-top:20pt;padding-bottom:14pt;}' +
+    '.scale-bar{height:7pt;border-radius:4pt;position:relative;}' +
+    '.scale-labels{display:flex;justify-content:space-between;margin-top:3pt;font-size:7pt;color:#666;}' +
+    '.footer-line{font-size:6.5pt;color:#aaa;border-top:.5px solid #ddd;padding-top:5pt;margin-top:2pt;}' +
+    '@media print{.no-print{display:none!important;} body{margin:0;}}' +
+    '.print-btn-bar{text-align:center;padding:12pt 0 8pt;border-bottom:1px solid #eee;margin-bottom:8pt;}' +
+    '.print-btn-bar button{padding:7pt 20pt;font-size:10pt;font-family:"Arial Narrow",Arial;background:#1565C0;color:#fff;border:none;border-radius:4pt;cursor:pointer;margin:0 4pt;}' +
+    '.print-btn-bar button:hover{background:#1976D2;}' +
+    '.print-btn-bar button.close-btn-rep{background:#f0f3f8;color:#333;}' +
+    '</style></head><body>' +
+    '<div class="print-btn-bar no-print">' +
+    '<button onclick="window.print()">🖨 Распечатать</button>' +
+    '<button class="close-btn-rep" onclick="window.close()">✕ Закрыть</button>' +
+    '</div>' +
+    '<div class="page">' +
+    '<h1>' + regName + '</h1>' +
+    '<h2>' + (window.S.type||'') + ' &nbsp;·&nbsp; ' + (window.S.year||'') + '</h2>' +
+    '<hr class="divider">' +
+    (mapDataUrl ? '<div class="map-wrap"><img src="'+mapDataUrl+'" alt="Карта"></div>' : '') +
+    '<hr class="divider-light">' +
+    '<div class="main-card">' +
+        '<div><div class="mc-label">'+d.lbl+'</div><div class="mc-value">'+d.fmtPct(d.v)+'</div></div>' +
+        '<div class="mc-right">'+(window.S.year||'')+' · '+(window.S.type||'')+'</div>' +
+    '</div>' +
+    '<div class="cards">' +
+        '<div class="card"><div class="c-label">Место среди регионов</div>' +
+            '<div class="c-value accent">'+rankStr+'</div></div>' +
+        '<div class="card"><div class="c-label">Отклонение от среднего</div>' +
+            '<div class="c-value" style="color:'+d.dColor+'">'+d.dStr+'</div>' +
+            '<div class="c-sub">Среднее: '+avgStr+'</div></div>' +
+        '<div class="card"><div class="c-label">Минимум по регионам</div>' +
+            '<div class="c-value">'+minVal+'</div>' +
+            '<div class="c-sub">'+minName+'</div></div>' +
+        '<div class="card"><div class="c-label">Максимум по регионам</div>' +
+            '<div class="c-value accent">'+maxVal+'</div>' +
+            '<div class="c-sub">'+maxName+'</div></div>' +
+    '</div>' +
+    '<div class="scale-wrap">' +
+        '<div class="scale-title">Шкала '+d.lbl.toLowerCase()+' по всем регионам</div>' +
+        '<div class="scale-bar-outer">' +
+            '<div class="scale-bar" style="background:'+d.gradCSS+'">'+markerHTML+'</div>' +
+            '<div class="scale-labels">' +
+                '<span>'+d.fmtPct(d.rng.min)+'</span>' +
+                '<span>'+avgStr+' (среднее)</span>' +
+                '<span>'+d.fmtPct(d.rng.max)+'</span>' +
+            '</div>' +
+        '</div>' +
+    '</div>' +
+    '<div class="footer-line">Сформировано: '+d.dateStr+' &nbsp;·&nbsp; Информационно-аналитическое управление</div>' +
+    '</div>' +
+    '</body></html>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КНОПКА ПЕЧАТЬ
+   Генерирует HTML-отчёт, открывает в новой вкладке.
+   Пользователь видит отчёт и нажимает «Распечатать».
+══════════════════════════════════════════════════════════════ */
+function printReport() {
+    var d = collectReportData();
+    if (!d) return;
+
+    var btn = document.getElementById('printBtn');
+    var origHTML = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+
+    renderMapPng().then(function(mapDataUrl) {
+        var html = buildReportHTML(d, mapDataUrl);
+        var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+        var url  = URL.createObjectURL(blob);
+        var win  = window.open(url, '_blank');
+        if (!win) alert('Разрешите всплывающие окна для этого сайта.');
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+    }).catch(function(err) {
+        alert('Ошибка: ' + err.message);
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+    });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КНОПКА ОТПРАВИТЬ
+   Алгоритм:
+   1. Рендерим карту → PNG
+   2. Строим HTML отчёта в скрытом div прямо на этой странице
+      (так html2canvas работает без ограничений CORS)
+   3. Снимаем canvas с этого div → JPEG → jsPDF → сохраняем PDF
+   4. Открываем mailto: с темой письма
+══════════════════════════════════════════════════════════════ */
+function emailReport() {
+    var d = collectReportData();
+    if (!d) return;
+
+    var btn = document.getElementById('emailBtn');
+    var origHTML = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+
+    renderMapPng().then(function(mapDataUrl) {
+        var regName = d.reg ? d.reg.name : '(регион не выбран)';
+        var subject = (window.S.type||'') + '. ' + (window.S.year||'') + '. ' + d.lbl + '. ' + regName;
+
+        /* ── Создаём скрытый контейнер на той же странице ── */
+        var wrap = document.createElement('div');
+        wrap.style.cssText = [
+            'position:fixed','left:-9999px','top:0',
+            'width:794px','background:#fff',
+            'font-family:Arial Narrow,Arial,sans-serif',
+            'color:#1a1a1a','z-index:-1','overflow:hidden'
+        ].join(';');
+
+        var avgStr  = d.fmtPct(d.rng.avg);
+        var minName = d.minR ? d.minR.name : '—';
+        var maxName = d.maxR ? d.maxR.name : '—';
+        var minVal  = d.fmtPct(d.minR ? window.DATA[d.minR.key] : null);
+        var maxVal  = d.fmtPct(d.maxR ? window.DATA[d.maxR.key] : null);
+        var rankStr = (d.rank && d.wd.length) ? d.rank + ' из ' + d.wd.length : 'н/д';
+        var diff    = d.diff;
+        var dStr    = diff !== null ? (diff>=0?'+':'\u2212') + d.fmtPct(Math.abs(diff)).replace('\u00A0%','') + '\u00A0%' : 'н/д';
+        var dColor  = d.dColor;
+
+        /* Маркер на шкале */
+        var markerStyle = d.markerLeft !== null
+            ? 'position:absolute;left:calc('+d.markerLeft+'% - 7px);top:-4px;width:14px;height:14px;border-radius:50%;background:#fff;border:2.5px solid #1565C0;box-shadow:0 1px 4px rgba(0,0,0,.25);'
+            : 'display:none';
+        var markerLblStyle = d.markerLeft !== null
+            ? 'position:absolute;left:'+d.markerLeft+'%;transform:translateX(-50%);top:-20px;font-size:9px;font-weight:700;color:#1565C0;white-space:nowrap;'
+            : 'display:none';
+
+        /* Стили для карточек */
+        var cardBase  = 'background:#f0f3f8;border-radius:6px;padding:10px 12px;flex:1;min-width:0;';
+        var labelSt   = 'font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:4px;';
+        var valueSt   = 'font-size:20px;font-weight:700;line-height:1;';
+        var subSt     = 'font-size:9px;color:#666;margin-top:3px;';
+
+        wrap.innerHTML =
+          '<div style="width:750px;margin:0 auto;padding:30px 0 20px;">' +
+          '<div style="font-size:15pt;font-weight:700;color:#1547A1;margin-bottom:4px;">'+regName+'</div>'+
+          '<div style="font-size:13pt;font-weight:700;color:#1a1a1a;margin-bottom:10px;">'+(window.S.type||'')+' &nbsp;·&nbsp; '+(window.S.year||'')+'</div>'+
+          '<div style="border-top:2px solid #1565C0;margin-bottom:10px;"></div>'+
+          (mapDataUrl?'<div style="margin-bottom:10px;"><img src="'+mapDataUrl+'" style="width:750px;height:auto;max-height:395px;object-fit:contain;display:block;"></div>':'') +
+          '<div style="border-top:1px solid #c8d8ea;margin-bottom:10px;"></div>'+
+          '<div style="background:#1565C0;border-radius:6px;padding:14px 16px;color:#fff;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+            '<div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:.75;">'+d.lbl+'</div>'+
+            '<div style="font-size:28pt;font-weight:700;letter-spacing:-1px;line-height:1;">'+d.fmtPct(d.v)+'</div></div>'+
+            '<div style="text-align:right;font-size:9px;opacity:.75;">'+(window.S.year||'')+' · '+(window.S.type||'')+'</div>'+
+          '</div>'+
+          '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+            '<div style="'+cardBase+'"><div style="'+labelSt+'">Место среди регионов</div><div style="'+valueSt+'color:#1565C0;">'+rankStr+'</div></div>'+
+            '<div style="'+cardBase+'"><div style="'+labelSt+'">Отклонение от среднего</div><div style="'+valueSt+'color:'+dColor+';">'+dStr+'</div><div style="'+subSt+'">Среднее: '+avgStr+'</div></div>'+
+            '<div style="'+cardBase+'"><div style="'+labelSt+'">Минимум</div><div style="'+valueSt+'">'+minVal+'</div><div style="'+subSt+'">'+minName+'</div></div>'+
+            '<div style="'+cardBase+'"><div style="'+labelSt+'">Максимум</div><div style="'+valueSt+'color:#1565C0;">'+maxVal+'</div><div style="'+subSt+'">'+maxName+'</div></div>'+
+          '</div>'+
+          '<div style="margin-bottom:10px;">'+
+            '<div style="font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:6px;">Шкала '+d.lbl.toLowerCase()+' по всем регионам</div>'+
+            '<div style="margin:0 30px;position:relative;padding-top:26px;padding-bottom:16px;">'+
+              '<div style="height:9px;border-radius:5px;background:'+d.gradCSS+';position:relative;">'+
+                '<div style="'+markerStyle+'"></div>'+
+                '<div style="'+markerLblStyle+'">'+d.fmtPct(d.v)+'</div>'+
+              '</div>'+
+              '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:#666;">'+
+                '<span>'+d.fmtPct(d.rng.min)+'</span><span>'+avgStr+' (ср.)</span><span>'+d.fmtPct(d.rng.max)+'</span>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="border-top:1px solid #ddd;padding-top:6px;font-size:8px;color:#aaa;">'+
+            'Сформировано: '+d.dateStr+' &nbsp;·&nbsp; Информационно-аналитическое управление'+
+          '</div>'+
+          '</div>';
+
+        document.body.appendChild(wrap);
+
+        /* Ждём рендер изображений */
+        setTimeout(function() {
+            html2canvas(wrap, {
+                scale: 1.5,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                width:  794,
+                windowWidth: 794
+            }).then(function(canvas) {
+                document.body.removeChild(wrap);
+
+                var imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+                function makePdf() {
+                    var jsPDF = window.jspdf ? window.jspdf.jsPDF : null;
+                    if (!jsPDF) { setTimeout(makePdf, 150); return; }
+                    var doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+                    /* Рассчитываем высоту пропорционально */
+                    var pdfH = Math.round(297 * canvas.height / canvas.width);
+                    if (pdfH > 297) pdfH = 297;
+                    doc.addImage(imgData, 'JPEG', 0, 0, 210, pdfH);
+                    var fname = 'report_' + (d.key||'region') + '_' +
+                                (window.S.year||'').replace(/[\s\/\\:*?"<>|]/g,'_') + '.pdf';
+                    doc.save(fname);
+
+                    /* Открываем Outlook */
+                    var body = encodeURIComponent(
+                        'Уважаемые коллеги,\r\n\r\n' +
+                        'Направляю отчёт по результатам выборов.\r\n\r\n' +
+                        'Регион: ' + regName + '\r\n' +
+                        'Тип: ' + (window.S.type||'') + '\r\n' +
+                        'Период: ' + (window.S.year||'') + '\r\n' +
+                        'Показатель: ' + d.lbl + ' — ' + d.fmtPct(d.v) + '\r\n\r\n' +
+                        'Файл отчёта сохранён: ' + fname + '\r\n' +
+                        'Прикрепите его к письму перед отправкой.\r\n\r\n' +
+                        'С уважением,\r\nИнформационно-аналитическое управление'
+                    );
+                    window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + body;
+
+                    btn.innerHTML = origHTML;
+                    btn.disabled = false;
+                }
+                makePdf();
+
+            }).catch(function(err) {
+                document.body.removeChild(wrap);
+                alert('Ошибка рендера: ' + err.message);
+                btn.innerHTML = origHTML;
+                btn.disabled = false;
+            });
+        }, 300);
+
+    }).catch(function(err) {
+        alert('Ошибка карты: ' + err.message);
+        btn.innerHTML = origHTML;
+        btn.disabled = false;
+    });
+}
+</script>
+
+<!-- jsPDF загружается асинхронно (нужен только для email) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" async></script>
+</body>
+</html>

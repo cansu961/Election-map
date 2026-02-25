@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПОРТАЛ ДАННЫХ</title>
+<link rel="stylesheet" href="CSS/portal.css">
+</head>
+
+<body class="theme-current">
+<div class="wrapper">
+
+    <!-- ШАПКА -->
+    <header class="header">
+        <div class="header-left">
+            <a href="https://google.com" class="header-btn">Совет Федерации</a>
+            <a href="https://google.com" class="header-btn">ИАУ</a>
+            <span class="header-title">ПОРТАЛ ДАННЫХ</span>
+        </div>
+        <div class="header-right">
+            <div class="theme-switcher">
+                <button class="theme-toggle-btn" id="themeToggle">&#9682; ТЕМЫ</button>
+                <div class="theme-dropdown" id="themeDropdown">
+                    <button class="theme-option is-active" data-theme="theme-current">
+                        <span class="swatch sw-current"></span>Мятная
+                    </button>
+                    <button class="theme-option" data-theme="theme-mint">
+                        <span class="swatch sw-mint"></span>Кобальт
+                    </button>
+                    <button class="theme-option" data-theme="theme-glass">
+                        <span class="swatch sw-glass"></span>Графит
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- КОНТЕНТ — плитки -->
+    <main class="content-main">
+        <div class="grid-main">
+            <a href="Vybory/vybory.html" class="tile tile-1">ВЫБОРЫ</a>
+            <a href="Regiony/regiony.html" class="tile tile-2">РЕГИОНЫ</a>
+            <a href="Statistika/statistika.html" class="tile tile-3">СТАТИСТИКА</a>
+            <a href="Analitika/analitika.html" class="tile tile-4">АНАЛИТИКА</a>
+        </div>
+    </main>
+
+</div>
+
+<!-- ФУТЕР -->
+<footer class="footer">
+    &copy;&nbsp;<span id="year"></span>&nbsp;&nbsp;Информационно-аналитическое управление
+</footer>
+
+<script src="JS/theme.js"></script>
+</body>
+</html>
