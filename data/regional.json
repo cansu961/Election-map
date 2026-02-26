@@ -1,0 +1,37 @@
+{
+  "governors": [
+    {"year": 2000, "total": 19, "turnout_avg": 52.3},
+    {"year": 2001, "total": 45, "turnout_avg": 50.1},
+    {"year": 2002, "total": 27, "turnout_avg": 51.7},
+    {"year": 2003, "total": 37, "turnout_avg": 53.2},
+    {"year": 2004, "total": 29, "turnout_avg": 55.8},
+    {"year": 2012, "total": 5,  "turnout_avg": 51.2},
+    {"year": 2013, "total": 8,  "turnout_avg": 36.5},
+    {"year": 2014, "total": 30, "turnout_avg": 39.3},
+    {"year": 2015, "total": 21, "turnout_avg": 41.7},
+    {"year": 2016, "total": 7,  "turnout_avg": 36.2},
+    {"year": 2017, "total": 6,  "turnout_avg": 38.5},
+    {"year": 2018, "total": 22, "turnout_avg": 41.3},
+    {"year": 2019, "total": 16, "turnout_avg": 35.1},
+    {"year": 2020, "total": 18, "turnout_avg": 40.7},
+    {"year": 2021, "total": 9,  "turnout_avg": 37.8},
+    {"year": 2022, "total": 14, "turnout_avg": 53.9},
+    {"year": 2023, "total": 26, "turnout_avg": 56.2},
+    {"year": 2024, "total": 21, "turnout_avg": 58.1}
+  ],
+  "regional_parliaments": [
+    {"year": 2000, "total": 12, "turnout_avg": 49.3},
+    {"year": 2003, "total": 19, "turnout_avg": 47.6},
+    {"year": 2007, "total": 14, "turnout_avg": 55.2},
+    {"year": 2011, "total": 27, "turnout_avg": 52.8},
+    {"year": 2013, "total": 16, "turnout_avg": 32.4},
+    {"year": 2014, "total": 14, "turnout_avg": 33.1},
+    {"year": 2015, "total": 11, "turnout_avg": 35.7},
+    {"year": 2016, "total": 39, "turnout_avg": 37.2},
+    {"year": 2018, "total": 16, "turnout_avg": 37.8},
+    {"year": 2019, "total": 13, "turnout_avg": 31.4},
+    {"year": 2021, "total": 39, "turnout_avg": 42.3},
+    {"year": 2023, "total": 16, "turnout_avg": 48.9},
+    {"year": 2024, "total": 6,  "turnout_avg": 51.2}
+  ]
+}

@@ -1,0 +1,514 @@
+/* ============================================================
+   portal.css — Общие стили для всего портала
+   Шрифт: Calibri → Trebuchet MS → Arial (есть во всех Windows 7/10/11)
+   Темы: theme-current | theme-mint | theme-glass
+   Подключать: <link rel="stylesheet" href="../CSS/portal.css">
+   Глубина пути зависит от уровня страницы (../ или ../../ и т.д.)
+   ============================================================ */
+
+/* ---- СБРОС ---- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 14px;
+}
+
+/* ============================================================
+   ТЕМЫ — CSS-переменные
+   ============================================================ */
+
+/* --- Тема 1: Мятная (бирюза — цвет хедера задаёт гамму) --- */
+.theme-current {
+    --hd-bg:          #00c9b8;
+    --hd-text:        #ffffff;
+    --hd-hover:       rgba(0, 0, 0, 0.12);
+    --body-bg:        #ffffff;
+    --row-bg:         #e0f7f5;
+    --btn-bg:         #b2ebf2;
+    --btn-text:       #00696b;
+    --btn-act-bg:     #00838f;
+    --btn-act-text:   #ffffff;
+    --btn-hover-br:   #00c9b8;
+    --map-bg:         #ffffff;
+    --map-tile:       #b0bec5;
+    --map-act:        #00838f;
+    --map-hov:        #4dd0c4;
+    --tbl-hd:         #00838f;
+    --footer-bg:      #e0f7f5;
+    --footer-text:    #00696b;
+    --tile-accent-1:  #00838f;
+    --tile-accent-2:  #00acc1;
+    --tile-accent-3:  #0097a7;
+    --tile-accent-4:  #006064;
+    --tile-bg:        #ffffff;
+    --tile-text:      #00696b;
+    --tile-disabled:  #b0bec5;
+    /* Цвета градиента карты: тёмный — #004d5a, светлый — #b2ebf2 */
+    --map-grad-lo:    #b2ebf2;
+    --map-grad-hi:    #004d5a;
+    /* Акцентный цвет для инфо-панели и шкалы */
+    --accent-main:    #00838f;
+    --accent-light:   #b2ebf2;
+}
+
+/* --- Тема 2: Кобальт (насыщенный синий) --- */
+.theme-mint {
+    --hd-bg:          #1565C0;
+    --hd-text:        #E3F2FD;
+    --hd-hover:       rgba(255, 255, 255, 0.15);
+    --body-bg:        #F7F8FA;
+    --row-bg:         #E3F2FD;
+    --btn-bg:         #BBDEFB;
+    --btn-text:       #1565C0;
+    --btn-act-bg:     #1565C0;
+    --btn-act-text:   #ffffff;
+    --btn-hover-br:   #1976D2;
+    --map-bg:         #ffffff;
+    --map-tile:       #90CAF9;
+    --map-act:        #1565C0;
+    --map-hov:        #1976D2;
+    --tbl-hd:         #1565C0;
+    --footer-bg:      #E3F2FD;
+    --footer-text:    #1565C0;
+    --tile-accent-1:  #1565C0;
+    --tile-accent-2:  #1976D2;
+    --tile-accent-3:  #0D47A1;
+    --tile-accent-4:  #1E88E5;
+    --tile-bg:        #ffffff;
+    --tile-text:      #1B2336;
+    --tile-disabled:  #90CAF9;
+    --map-grad-lo:    #BBDEFB;
+    --map-grad-hi:    #1565C0;
+    --accent-main:    #1565C0;
+    --accent-light:   #E3F2FD;
+}
+
+/* --- Тема 3: Графит (тёмная, iOS-style) --- */
+/* --- Тема 3: Графит (тёмная, iOS-style) + синяя гамма карты из election_map --- */
+.theme-glass {
+    --hd-bg:          #1c1c1e;
+    --hd-text:        #f2f2f7;
+    --hd-hover:       rgba(255, 255, 255, 0.10);
+    --body-bg:        #000000;
+    --row-bg:         rgba(21, 101, 192, 0.15);
+    --btn-bg:         rgba(21, 101, 192, 0.18);
+    --btn-text:       #90CAF9;
+    --btn-act-bg:     #1565C0;
+    --btn-act-text:   #ffffff;
+    --btn-hover-br:   #64B5F6;
+    --map-bg:         #1c1c1e;
+    --map-tile:       #1565C0;
+    --map-act:        #42A5F5;
+    --map-hov:        #1976D2;
+    --tbl-hd:         rgba(21, 101, 192, 0.30);
+    --footer-bg:      #1c1c1e;
+    --footer-text:    #90CAF9;
+    --tile-accent-1:  #1565C0;
+    --tile-accent-2:  #1976D2;
+    --tile-accent-3:  #0D47A1;
+    --tile-accent-4:  #42A5F5;
+    --tile-bg:        rgba(255, 255, 255, 0.06);
+    --tile-text:      #E3F2FD;
+    --tile-disabled:  rgba(21, 101, 192, 0.20);
+    /* Шкала карты из election_map: #BBDEFB → #0D47A1 */
+    --map-grad-lo:    #BBDEFB;
+    --map-grad-hi:    #0D47A1;
+    --accent-main:    #1565C0;
+    --accent-light:   rgba(21, 101, 192, 0.22);
+}
+
+/* ============================================================
+   БАЗОВЫЙ LAYOUT
+   ============================================================ */
+body {
+    background-color: var(--body-bg);
+    transition: background-color 0.35s;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ============================================================
+   ШАПКА — единый стиль для всех страниц
+   ============================================================ */
+.header {
+    height: 50px;
+    width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background-color: var(--hd-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
+    transition: background-color 0.35s;
+    white-space: nowrap;
+    overflow: visible;        /* ВАЖНО: visible чтобы дропдаун не обрезался */
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Кнопки-ссылки в шапке */
+.header-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 13px;
+    height: 30px;
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.50);
+    border-radius: 15px;
+    color: #ffffff;
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.20s, border-color 0.20s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.header-btn:hover {
+    background: var(--hd-hover);
+    border-color: rgba(255, 255, 255, 0.90);
+}
+
+/* Заголовок страницы в шапке */
+.header-title {
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin-left: 14px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   КНОПКА ТЕМЫ + ВЫПАДАЮЩИЙ СПИСОК
+   ============================================================ */
+.theme-switcher {
+    position: relative;
+}
+
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 15px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    border-radius: 15px;
+    color: #ffffff;
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.20s;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.30);
+}
+
+/* Выпадающий список тем */
+.theme-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 155px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.20);
+    overflow: hidden;
+    /* z-index выше шапки — список поверх контента страницы */
+    z-index: 9999;
+    animation: dropIn 0.16s ease;
+}
+
+@keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.theme-dropdown.open {
+    display: block;
+}
+
+/* Тёмный фон дропдауна для темы Графит (iOS-style) */
+.theme-glass .theme-dropdown {
+    background: rgba(44, 44, 46, 0.96);
+    border-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.theme-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    transition: background 0.14s;
+}
+
+.theme-option:last-child { border-bottom: none; }
+
+.theme-glass .theme-option {
+    color: #f2f2f7;
+    border-bottom-color: rgba(255, 255, 255, 0.07);
+}
+
+.theme-option:hover { background: rgba(0, 0, 0, 0.05); }
+.theme-glass .theme-option:hover { background: rgba(255, 255, 255, 0.08); }
+
+.theme-option.is-active { font-weight: 700; color: #007a87; }
+.theme-mint .theme-option.is-active { color: #283593; }
+.theme-glass .theme-option.is-active { color: #ffffff; font-weight: 800; }
+
+/* Цветные кружки-свотчи */
+.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+.sw-current { background: #00c9b8; }
+.sw-mint    { background: #283593; }
+.sw-glass   { background: linear-gradient(135deg, #1c1c1e 50%, #636366 50%); }
+
+/* ============================================================
+   ФУТЕР — единый для всех страниц
+   ============================================================ */
+.footer {
+    height: 26px;
+    width: 100%;
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    font-size: 12px;
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 18px;
+    transition: background-color 0.35s, color 0.35s;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   ПЛИТКИ ГЛАВНОЙ СТРАНИЦЫ (index.html)
+   ============================================================ */
+.content-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+}
+
+.grid-main {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 700px;
+}
+
+.tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 160px;
+    background: var(--tile-bg);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: var(--tile-text);
+    font-family: Calibri, 'Trebuchet MS', Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, color 0.18s;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Цветная полоска сверху */
+.tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background-color: var(--accent, #00c9b8);
+    border-radius: 10px 10px 0 0;
+}
+
+.tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+    border-color: var(--accent, #00c9b8);
+    color: var(--accent, #00c9b8);
+}
+
+.tile-1 { --accent: var(--tile-accent-1); }
+.tile-2 { --accent: var(--tile-accent-2); }
+.tile-3 { --accent: var(--tile-accent-3); }
+.tile-4 { --accent: var(--tile-accent-4); }
+
+/* Заглушки для неготовых разделов */
+.tile-disabled {
+    cursor: default;
+    opacity: 0.50;
+    pointer-events: none;
+}
+
+.tile-disabled::after {
+    content: 'скоро';
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #aaa;
+    background: rgba(0, 0, 0, 0.06);
+    padding: 2px 8px;
+    border-radius: 8px;
+}
+
+/* ============================================================
+   ВНУТРЕННИЕ СТРАНИЦЫ — заглушка (регионы, статистика, аналитика)
+   ============================================================ */
+.content-inner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    color: var(--btn-text);
+    font-size: 18px;
+    opacity: 0.5;
+}
+
+.content-inner .inner-icon {
+    font-size: 48px;
+    opacity: 0.4;
+}
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.20); border-radius: 3px; }
+
+/* ============================================================
+   АДАПТИВНОСТЬ — 375px → 1440px
+   ============================================================ */
+
+/* Планшет: ≤ 900px */
+@media (max-width: 900px) {
+    .grid-main {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 100%;
+        gap: 14px;
+    }
+    .tile { height: 130px; font-size: 17px; letter-spacing: 2px; }
+    .header-title { font-size: 16px; letter-spacing: 2px; }
+    .header-btn { font-size: 11px; padding: 0 10px; }
+}
+
+/* Мобильный: ≤ 600px */
+@media (max-width: 600px) {
+    .header { padding: 0 10px; }
+    .header-left { gap: 6px; }
+    /* Скрываем кнопки-ссылки в шапке, оставляем только заголовок */
+    .header-btn:not(.theme-toggle-btn) { display: none; }
+    /* Кнопка «Назад» всегда видна */
+    .header-btn[href="../index.html"],
+    .header-btn[href="./index.html"] { display: inline-flex; }
+    .header-title { font-size: 14px; letter-spacing: 1.5px; margin-left: 6px; }
+    .grid-main {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 0 4px;
+    }
+    .tile { height: 100px; font-size: 14px; letter-spacing: 1.5px; border-radius: 10px; }
+    .content-main { padding: 20px 14px; }
+    .footer { font-size: 11px; padding-right: 12px; }
+}
+
+/* Очень маленький экран: ≤ 375px */
+@media (max-width: 375px) {
+    .grid-main { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tile { height: 88px; font-size: 12px; letter-spacing: 1px; }
+    .header-title { font-size: 12px; letter-spacing: 1px; }
+}
+
+/* Широкий экран: ≥ 1440px */
+@media (min-width: 1440px) {
+    .grid-main { max-width: 900px; gap: 24px; }
+    .tile { height: 190px; font-size: 22px; }
+}
+
+/* Печать */
+@media print {
+    .header { position: static; box-shadow: none; }
+    .theme-switcher { display: none; }
+    .footer { background: transparent; color: #333; }
+}

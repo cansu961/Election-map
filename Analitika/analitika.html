@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>АНАЛИТИКА</title>
+<link rel="stylesheet" href="../CSS/portal.css">
+<style>
+* { font-family: Calibri,'Trebuchet MS',Arial,sans-serif; box-sizing: border-box; }
+#root { position:fixed; inset:0; display:flex; flex-direction:column; background:var(--body-bg); transition:background .35s; }
+.crow { display:flex; align-items:center; height:36px; padding:0 18px; gap:5px; background:var(--row-bg); border-bottom:1px solid rgba(0,0,0,.06); overflow-x:auto; flex-shrink:0; scrollbar-width:thin; }
+.crow::-webkit-scrollbar { height:3px; }
+.crow::-webkit-scrollbar-thumb { background:rgba(0,0,0,.15); }
+.nbtn { display:inline-flex; align-items:center; height:24px; padding:0 9px; background:var(--btn-bg); color:var(--btn-text); border:1.5px solid transparent; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.2px; text-transform:uppercase; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .13s; }
+.nbtn:hover { border-color:var(--btn-hover-br); color:var(--btn-act-bg); }
+.nbtn.on { background:var(--btn-act-bg); color:var(--btn-act-text); border-color:var(--btn-act-bg); }
+/* Панели */
+#app { flex:1; display:flex; flex-direction:column; min-height:0; padding:16px; gap:10px; overflow:hidden; }
+.panel { display:none; flex:1; min-height:0; flex-direction:column; gap:10px; }
+.panel.on { display:flex; }
+/* Таблица */
+.tbl-wrap { flex:1; overflow-y:auto; border-radius:10px; border:1px solid rgba(0,0,0,.07); scrollbar-width:thin; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th {
+  position:sticky; top:0;
+  background:var(--tbl-hd); color:#fff;
+  padding:9px 12px; text-align:left;
+  font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:.4px;
+  cursor:pointer; user-select:none; white-space:nowrap;
+}
+thead th:hover { opacity:.85; }
+thead th.asc::after  { content:" ↑"; }
+thead th.desc::after { content:" ↓"; }
+tbody tr:nth-child(even) { background:var(--row-bg); }
+tbody tr:hover { background:var(--accent-light); }
+tbody td { padding:7px 12px; color:var(--btn-text); border-bottom:1px solid rgba(0,0,0,.04); }
+.bar { display:inline-block; height:7px; border-radius:3px; background:var(--accent-main); margin-right:6px; vertical-align:middle; opacity:.75; }
+.win { font-weight:700; color:var(--btn-act-bg); }
+/* График трендов */
+.chart-box { flex:1; position:relative; min-height:0; background:var(--tile-bg,#fff); border-radius:10px; border:1px solid rgba(0,0,0,.07); padding:16px; transition:background .35s; }
+.chart-box canvas { max-height:100%; }
+/* Легенда */
+.legend { display:flex; gap:16px; flex-shrink:0; }
+.leg-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--btn-text); }
+.leg-dot { width:28px; height:4px; border-radius:2px; flex-shrink:0; }
+</style>
+</head>
+<body class="theme-current">
+<div id="root">
+
+  <!-- ШАПКА -->
+  <header class="header">
+    <div class="header-left">
+      <a href="https://google.com" class="header-btn">Совет Федерации</a>
+      <a href="https://google.com" class="header-btn">ИАУ</a>
+      <a href="../index.html" class="header-btn">← Назад</a>
+      <span class="header-title">АНАЛИТИКА</span>
+    </div>
+    <div class="header-right">
+      <div class="theme-switcher">
+        <button class="theme-toggle-btn" id="themeToggle">&#9682; ТЕМЫ</button>
+        <div class="theme-dropdown" id="themeDropdown">
+          <button class="theme-option is-active" data-theme="theme-current"><span class="swatch sw-current"></span>Мятная</button>
+          <button class="theme-option" data-theme="theme-mint"><span class="swatch sw-mint"></span>Кобальт</button>
+          <button class="theme-option" data-theme="theme-glass"><span class="swatch sw-glass"></span>Графит</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ -->
+  <div class="crow">
+    <button class="nbtn on" id="btn-pres" onclick="setMode('president')">Президент</button>
+    <button class="nbtn" id="btn-duma" onclick="setMode('duma')">Государственная Дума</button>
+    <button class="nbtn" id="btn-trend" onclick="setMode('trends')">Тренды явки</button>
+  </div>
+
+  <div id="app">
+
+    <!-- ПАНЕЛЬ: Президент -->
+    <div class="panel on" id="panel-president">
+      <div class="tbl-wrap">
+        <table id="tbl-pres">
+          <thead>
+            <tr>
+              <th onclick="sortTbl('pres',0)">Год</th>
+              <th onclick="sortTbl('pres',1)">Дата</th>
+              <th onclick="sortTbl('pres',2)">Явка</th>
+              <th onclick="sortTbl('pres',3)">Победитель</th>
+              <th onclick="sortTbl('pres',4)">%</th>
+              <th onclick="sortTbl('pres',5)">2-й кандидат</th>
+              <th onclick="sortTbl('pres',6)">%</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pres"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ПАНЕЛЬ: Госдума -->
+    <div class="panel" id="panel-duma">
+      <div class="tbl-wrap">
+        <table id="tbl-duma">
+          <thead>
+            <tr>
+              <th onclick="sortTbl('duma',0)">Год</th>
+              <th onclick="sortTbl('duma',1)">Созыв</th>
+              <th onclick="sortTbl('duma',2)">Явка</th>
+              <th onclick="sortTbl('duma',3)">Лидер</th>
+              <th onclick="sortTbl('duma',4)">%</th>
+              <th onclick="sortTbl('duma',5)">КПРФ %</th>
+              <th onclick="sortTbl('duma',6)">ЛДПР %</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-duma"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ПАНЕЛЬ: Тренды -->
+    <div class="panel" id="panel-trends">
+      <div class="legend">
+        <div class="leg-item"><span class="leg-dot" style="background:#1565C0"></span>Президентские</div>
+        <div class="leg-item"><span class="leg-dot" style="background:#e53935"></span>Государственная Дума</div>
+      </div>
+      <div class="chart-box">
+        <canvas id="chartTrends"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+<footer class="footer">&copy;&nbsp;<span id="year"></span>&nbsp;&nbsp;Информационно-аналитическое управление</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="../JS/theme.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ── Данные (fallback) ── */
+var PRES = [
+  {year:1991, date:"12 июня 1991",        turnout:74.66, winner:"Ельцин Б.Н.",    wpct:57.30, second:"Рыжков Н.И.",    spct:16.85},
+  {year:1996, date:"16 июня 1996 (1 тур)",turnout:69.81, winner:"Ельцин Б.Н.",    wpct:35.28, second:"Зюганов Г.А.",   spct:32.04},
+  {year:1996, date:"3 июля 1996 (2 тур)", turnout:68.88, winner:"Ельцин Б.Н.",    wpct:53.82, second:"Зюганов Г.А.",   spct:40.31},
+  {year:2000, date:"26 марта 2000",        turnout:68.74, winner:"Путин В.В.",     wpct:52.94, second:"Зюганов Г.А.",   spct:29.21},
+  {year:2004, date:"14 марта 2004",        turnout:64.38, winner:"Путин В.В.",     wpct:71.31, second:"Харитонов Н.М.",spct:13.69},
+  {year:2008, date:"2 марта 2008",         turnout:69.70, winner:"Медведев Д.А.",  wpct:70.28, second:"Зюганов Г.А.",   spct:17.72},
+  {year:2012, date:"4 марта 2012",         turnout:65.34, winner:"Путин В.В.",     wpct:63.60, second:"Зюганов Г.А.",   spct:17.18},
+  {year:2018, date:"18 марта 2018",        turnout:67.47, winner:"Путин В.В.",     wpct:76.69, second:"Грудинин П.Н.", spct:11.77},
+  {year:2024, date:"15–17 марта 2024",     turnout:77.44, winner:"Путин В.В.",     wpct:87.28, second:"Харитонов Н.М.",spct:4.31}
+];
+var DUMA = [
+  {year:1993, conv:"I",    turnout:54.81, leader:"ЛДПР",          lpct:22.92, kprf:12.40, ldpr:22.92},
+  {year:1995, conv:"II",   turnout:64.76, leader:"КПРФ",          lpct:22.30, kprf:22.30, ldpr:11.18},
+  {year:1999, conv:"III",  turnout:61.85, leader:"КПРФ",          lpct:24.29, kprf:24.29, ldpr:5.98},
+  {year:2003, conv:"IV",   turnout:55.75, leader:"Единая Россия", lpct:37.57, kprf:12.61, ldpr:11.45},
+  {year:2007, conv:"V",    turnout:63.71, leader:"Единая Россия", lpct:64.30, kprf:11.57, ldpr:8.14},
+  {year:2011, conv:"VI",   turnout:60.21, leader:"Единая Россия", lpct:49.32, kprf:19.19, ldpr:11.67},
+  {year:2016, conv:"VII",  turnout:47.88, leader:"Единая Россия", lpct:54.20, kprf:13.34, ldpr:13.14},
+  {year:2021, conv:"VIII", turnout:51.72, leader:"Единая Россия", lpct:49.82, kprf:18.93, ldpr:7.55}
+];
+
+/* ── Состояние ── */
+var mode = 'president';
+var sortState = { pres: {col:-1, asc:true}, duma: {col:-1, asc:true} };
+var chartTrends = null;
+
+/* ── Переключение режима ── */
+function setMode(m) {
+  mode = m;
+  ['president','duma','trends'].forEach(function(id){
+    document.getElementById('btn-' + (id==='trends'?'trend':id)).classList.toggle('on', id===m);
+    document.getElementById('panel-' + id).classList.toggle('on', id===m);
+  });
+  if (m === 'trends' && !chartTrends) renderTrends();
+}
+window.setMode = setMode;
+
+/* ── Таблица: Президент ── */
+function renderPresTable(data) {
+  var rows = (data || PRES);
+  var html = rows.map(function(r){
+    var bar = '<span class="bar" style="width:' + Math.round(r.turnout * 0.6) + 'px"></span>';
+    return '<tr>' +
+      '<td>' + r.year + '</td>' +
+      '<td>' + r.date + '</td>' +
+      '<td>' + bar + r.turnout.toFixed(2) + '%</td>' +
+      '<td class="win">' + r.winner + '</td>' +
+      '<td class="win">' + r.wpct.toFixed(2) + '%</td>' +
+      '<td>' + r.second + '</td>' +
+      '<td>' + r.spct.toFixed(2) + '%</td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('tbody-pres').innerHTML = html;
+}
+
+/* ── Таблица: Дума ── */
+function renderDumaTable(data) {
+  var rows = (data || DUMA);
+  var html = rows.map(function(r){
+    var bar = '<span class="bar" style="width:' + Math.round(r.turnout * 0.6) + 'px"></span>';
+    return '<tr>' +
+      '<td>' + r.year + '</td>' +
+      '<td>' + r.conv + ' созыв</td>' +
+      '<td>' + bar + r.turnout.toFixed(2) + '%</td>' +
+      '<td class="win">' + r.leader + '</td>' +
+      '<td class="win">' + r.lpct.toFixed(2) + '%</td>' +
+      '<td>' + r.kprf.toFixed(2) + '%</td>' +
+      '<td>' + r.ldpr.toFixed(2) + '%</td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('tbody-duma').innerHTML = html;
+}
+
+/* ── Сортировка таблицы ── */
+function sortTbl(type, col) {
+  var st = sortState[type];
+  var asc = (st.col === col) ? !st.asc : true;
+  st.col = col; st.asc = asc;
+
+  /* Сбрасываем классы заголовков */
+  var tblId = type === 'pres' ? 'tbl-pres' : 'tbl-duma';
+  var ths = document.querySelectorAll('#' + tblId + ' thead th');
+  ths.forEach(function(th, i){
+    th.classList.remove('asc','desc');
+    if (i === col) th.classList.add(asc ? 'asc' : 'desc');
+  });
+
+  var rows = type === 'pres' ? PRES.slice() : DUMA.slice();
+  rows.sort(function(a, b){
+    var va, vb;
+    if (type === 'pres') {
+      var cols = [a.year, a.date, a.turnout, a.winner, a.wpct, a.second, a.spct];
+      var colsB = [b.year, b.date, b.turnout, b.winner, b.wpct, b.second, b.spct];
+      va = cols[col]; vb = colsB[col];
+    } else {
+      var cols2 = [a.year, a.conv, a.turnout, a.leader, a.lpct, a.kprf, a.ldpr];
+      var cols2B = [b.year, b.conv, b.turnout, b.leader, b.lpct, b.kprf, b.ldpr];
+      va = cols2[col]; vb = cols2B[col];
+    }
+    if (typeof va === 'number') return asc ? va-vb : vb-va;
+    return asc ? String(va).localeCompare(String(vb), 'ru') : String(vb).localeCompare(String(va), 'ru');
+  });
+
+  if (type === 'pres') renderPresTable(rows);
+  else renderDumaTable(rows);
+}
+window.sortTbl = sortTbl;
+
+/* ── График трендов ── */
+function renderTrends() {
+  var presData = [
+    {x:1991, y:74.66},{x:1996, y:69.81},{x:1996, y:68.88},
+    {x:2000, y:68.74},{x:2004, y:64.38},{x:2008, y:69.70},
+    {x:2012, y:65.34},{x:2018, y:67.47},{x:2024, y:77.44}
+  ];
+  var dumaData = [
+    {x:1993, y:54.81},{x:1995, y:64.76},{x:1999, y:61.85},{x:2003, y:55.75},
+    {x:2007, y:63.71},{x:2011, y:60.21},{x:2016, y:47.88},{x:2021, y:51.72}
+  ];
+  var txtClr = getComputedStyle(document.body).getPropertyValue('--btn-text').trim() || '#444';
+  var canvas = document.getElementById('chartTrends');
+  if (chartTrends) { chartTrends.destroy(); chartTrends = null; }
+  chartTrends = new Chart(canvas, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Президентские',
+          data: presData,
+          borderColor: '#1565C0',
+          backgroundColor: 'rgba(21,101,192,.15)',
+          borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#1565C0',
+          fill: true, tension: 0.3
+        },
+        {
+          label: 'Государственная Дума',
+          data: dumaData,
+          borderColor: '#e53935',
+          backgroundColor: 'rgba(229,57,53,.1)',
+          borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: '#e53935',
+          fill: true, tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){ return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: 1990, max: 2026,
+          ticks: {
+            color: txtClr, font:{size:11},
+            callback: function(v){ return Number.isInteger(v) ? v : ''; },
+            stepSize: 5
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: txtClr, font:{size:11}, callback: function(v){ return v+'%'; } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        }
+      }
+    }
+  });
+}
+
+/* ── Перекраска при смене темы ── */
+window.recolorMap = function() {
+  if (chartTrends) renderTrends();
+};
+
+/* ── Загрузка данных с fallback ── */
+function loadJSON(url, fallback, cb) {
+  fetch(url)
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(cb)
+    .catch(function(){ cb(null); });
+}
+
+/* ── Инициализация ── */
+document.addEventListener('DOMContentLoaded', function(){
+  renderPresTable(null);
+  renderDumaTable(null);
+
+  /* Пробуем загрузить из JSON */
+  loadJSON('../data/president.json', null, function(d){
+    if (!d) return;
+    PRES.length = 0;
+    d.forEach(function(item){
+      var c = item.candidates || [];
+      PRES.push({
+        year: item.year,
+        date: item.date,
+        turnout: item.turnout,
+        winner: c[0] ? c[0].name : '—',
+        wpct:   c[0] ? c[0].pct  : 0,
+        second: c[1] ? c[1].name : '—',
+        spct:   c[1] ? c[1].pct  : 0
+      });
+    });
+    renderPresTable(PRES);
+  });
+
+  loadJSON('../data/duma.json', null, function(d){
+    if (!d) return;
+    DUMA.length = 0;
+    d.forEach(function(item){
+      var kprf = 0, ldpr = 0;
+      (item.parties||[]).forEach(function(p){
+        if (/КПРФ/.test(p.name)) kprf = p.pct;
+        if (/ЛДПР/.test(p.name)) ldpr = p.pct;
+      });
+      var leader = item.parties && item.parties[0] ? item.parties[0] : {};
+      DUMA.push({
+        year: item.year, conv: item.convocation.replace(' созыв',''),
+        turnout: item.turnout,
+        leader: leader.name || '—', lpct: leader.pct || 0,
+        kprf: kprf, ldpr: ldpr
+      });
+    });
+    renderDumaTable(DUMA);
+  });
+});
+
+})();
+</script>
+</body>
+</html>

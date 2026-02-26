@@ -1,0 +1,139 @@
+[
+  {
+    "id": "duma_1993",
+    "year": 1993,
+    "date": "12 декабря 1993",
+    "convocation": "I созыв",
+    "turnout": 54.81,
+    "total_registered": 106170835,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "ЛДПР",                  "pct": 22.92, "seats": 59,  "color": "#0D47A1"},
+      {"name": "Выбор России",           "pct": 15.51, "seats": 40,  "color": "#e53935"},
+      {"name": "КПРФ",                   "pct": 12.40, "seats": 32,  "color": "#b71c1c"},
+      {"name": "Женщины России",         "pct": 8.13,  "seats": 21,  "color": "#E91E63"},
+      {"name": "Аграрная партия России", "pct": 7.99,  "seats": 21,  "color": "#388E3C"},
+      {"name": "Яблоко",                "pct": 7.86,  "seats": 20,  "color": "#F9A825"},
+      {"name": "ПРЕС",                   "pct": 6.73,  "seats": 18,  "color": "#FF9800"},
+      {"name": "ДПР",                    "pct": 5.52,  "seats": 14,  "color": "#7B1FA2"},
+      {"name": "Прочие/одномандатники",  "pct": 12.94, "seats": 25,  "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_1995",
+    "year": 1995,
+    "date": "17 декабря 1995",
+    "convocation": "II созыв",
+    "turnout": 64.76,
+    "total_registered": 107496558,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "КПРФ",                    "pct": 22.30, "seats": 157, "color": "#b71c1c"},
+      {"name": "ЛДПР",                    "pct": 11.18, "seats": 51,  "color": "#0D47A1"},
+      {"name": "НДР (Наш дом — Россия)",  "pct": 10.13, "seats": 55,  "color": "#1565C0"},
+      {"name": "Яблоко",                 "pct": 6.89,  "seats": 45,  "color": "#F9A825"},
+      {"name": "Прочие/одномандатники",   "pct": 49.50, "seats": 142, "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_1999",
+    "year": 1999,
+    "date": "19 декабря 1999",
+    "convocation": "III созыв",
+    "turnout": 61.85,
+    "total_registered": 108073959,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "КПРФ",                   "pct": 24.29, "seats": 67,  "color": "#b71c1c"},
+      {"name": "Единство",               "pct": 23.32, "seats": 64,  "color": "#1565C0"},
+      {"name": "ОВР (Отечество — ВР)",   "pct": 13.33, "seats": 37,  "color": "#FF9800"},
+      {"name": "СПС",                    "pct": 8.52,  "seats": 24,  "color": "#e53935"},
+      {"name": "Блок Жириновского",      "pct": 5.98,  "seats": 17,  "color": "#FF5722"},
+      {"name": "Яблоко",                "pct": 5.93,  "seats": 16,  "color": "#F9A825"},
+      {"name": "Прочие/одномандатники",  "pct": 18.63, "seats": 225, "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_2003",
+    "year": 2003,
+    "date": "7 декабря 2003",
+    "convocation": "IV созыв",
+    "turnout": 55.75,
+    "total_registered": 108906723,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "Единая Россия",         "pct": 37.57, "seats": 120, "color": "#1565C0"},
+      {"name": "КПРФ",                  "pct": 12.61, "seats": 40,  "color": "#b71c1c"},
+      {"name": "ЛДПР",                  "pct": 11.45, "seats": 36,  "color": "#0D47A1"},
+      {"name": "Родина",                "pct": 9.02,  "seats": 29,  "color": "#78909C"},
+      {"name": "Яблоко",               "pct": 4.30,  "seats": 4,   "color": "#F9A825"},
+      {"name": "СПС",                   "pct": 3.97,  "seats": 3,   "color": "#e53935"},
+      {"name": "Прочие/одномандатники", "pct": 21.08, "seats": 68,  "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_2007",
+    "year": 2007,
+    "date": "2 декабря 2007",
+    "convocation": "V созыв",
+    "turnout": 63.71,
+    "total_registered": 109145517,
+    "threshold_pct": 7,
+    "parties": [
+      {"name": "Единая Россия", "pct": 64.30, "seats": 315, "color": "#1565C0"},
+      {"name": "КПРФ",         "pct": 11.57, "seats": 57,  "color": "#b71c1c"},
+      {"name": "ЛДПР",         "pct": 8.14,  "seats": 40,  "color": "#0D47A1"},
+      {"name": "Справедливая Россия", "pct": 7.74, "seats": 38, "color": "#4CAF50"},
+      {"name": "Прочие",       "pct": 8.25,  "seats": 0,   "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_2011",
+    "year": 2011,
+    "date": "4 декабря 2011",
+    "convocation": "VI созыв",
+    "turnout": 60.21,
+    "total_registered": 109237780,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "Единая Россия",    "pct": 49.32, "seats": 238, "color": "#1565C0"},
+      {"name": "КПРФ",             "pct": 19.19, "seats": 92,  "color": "#b71c1c"},
+      {"name": "Справедливая Россия","pct": 13.24,"seats": 64,  "color": "#4CAF50"},
+      {"name": "ЛДПР",             "pct": 11.67, "seats": 56,  "color": "#0D47A1"},
+      {"name": "Прочие",           "pct": 6.58,  "seats": 0,   "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_2016",
+    "year": 2016,
+    "date": "18 сентября 2016",
+    "convocation": "VII созыв",
+    "turnout": 47.88,
+    "total_registered": 111428540,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "Единая Россия",    "pct": 54.20, "seats": 343, "color": "#1565C0"},
+      {"name": "КПРФ",             "pct": 13.34, "seats": 42,  "color": "#b71c1c"},
+      {"name": "ЛДПР",             "pct": 13.14, "seats": 39,  "color": "#0D47A1"},
+      {"name": "Справедливая Россия","pct": 6.22,"seats": 23,  "color": "#4CAF50"},
+      {"name": "Прочие",           "pct": 13.10, "seats": 3,   "color": "#9E9E9E"}
+    ]
+  },
+  {
+    "id": "duma_2021",
+    "year": 2021,
+    "date": "19 сентября 2021",
+    "convocation": "VIII созыв",
+    "turnout": 51.72,
+    "total_registered": 109185894,
+    "threshold_pct": 5,
+    "parties": [
+      {"name": "Единая Россия",      "pct": 49.82, "seats": 324, "color": "#1565C0"},
+      {"name": "КПРФ",               "pct": 18.93, "seats": 57,  "color": "#b71c1c"},
+      {"name": "ЛДПР",               "pct": 7.55,  "seats": 21,  "color": "#0D47A1"},
+      {"name": "СР — За Правду",     "pct": 7.46,  "seats": 27,  "color": "#4CAF50"},
+      {"name": "Новые люди",         "pct": 5.32,  "seats": 16,  "color": "#00BCD4"},
+      {"name": "Прочие",             "pct": 10.92, "seats": 5,   "color": "#9E9E9E"}
+    ]
+  }
+]
