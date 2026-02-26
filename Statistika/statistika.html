@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СТАТИСТИКА</title>
+<link rel="stylesheet" href="../CSS/portal.css">
+<style>
+* { font-family: Calibri,'Trebuchet MS',Arial,sans-serif; box-sizing: border-box; }
+#root { position:fixed; inset:0; display:flex; flex-direction:column; background:var(--body-bg); transition:background .35s; }
+/* Фильтры */
+.crow { display:flex; align-items:center; height:36px; padding:0 18px; gap:5px; background:var(--row-bg); border-bottom:1px solid rgba(0,0,0,.06); overflow-x:auto; flex-shrink:0; transition:background .3s; scrollbar-width:thin; }
+.crow::-webkit-scrollbar { height:3px; }
+.crow::-webkit-scrollbar-thumb { background:rgba(0,0,0,.15); border-radius:2px; }
+.nbtn { display:inline-flex; align-items:center; height:24px; padding:0 9px; background:var(--btn-bg); color:var(--btn-text); border:1.5px solid transparent; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.2px; text-transform:uppercase; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .13s; }
+.nbtn:hover { border-color:var(--btn-hover-br); color:var(--btn-act-bg); }
+.nbtn.on { background:var(--btn-act-bg); color:var(--btn-act-text); border-color:var(--btn-act-bg); }
+/* Рабочая область */
+#app { flex:1; display:flex; flex-direction:column; min-height:0; padding:16px; gap:12px; overflow:hidden; }
+/* Вкладки */
+.tabs { display:flex; gap:6px; flex-shrink:0; }
+.tab-btn { padding:5px 18px; border-radius:6px; border:1.5px solid var(--btn-hover-br); background:transparent; color:var(--btn-text); font-size:12px; font-weight:700; cursor:pointer; transition:all .13s; }
+.tab-btn.on { background:var(--btn-act-bg); color:var(--btn-act-text); border-color:var(--btn-act-bg); }
+/* Контейнеры графиков */
+.chart-panels { flex:1; position:relative; min-height:0; }
+.chart-panel { position:absolute; inset:0; background:var(--tile-bg,#fff); border-radius:10px; border:1px solid rgba(0,0,0,.07); padding:20px; display:none; transition:background .35s; }
+.chart-panel.on { display:flex; flex-direction:column; }
+.chart-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--btn-text); opacity:.5; margin-bottom:12px; flex-shrink:0; }
+.chart-box { flex:1; position:relative; min-height:0; }
+/* Легенда результатов */
+.legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:12px; flex-shrink:0; }
+.leg-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--btn-text); }
+.leg-dot { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+</style>
+</head>
+<body class="theme-current">
+<div id="root">
+
+  <!-- ШАПКА -->
+  <header class="header">
+    <div class="header-left">
+      <a href="https://google.com" class="header-btn">Совет Федерации</a>
+      <a href="https://google.com" class="header-btn">ИАУ</a>
+      <a href="../index.html" class="header-btn">← Назад</a>
+      <span class="header-title">СТАТИСТИКА</span>
+    </div>
+    <div class="header-right">
+      <div class="theme-switcher">
+        <button class="theme-toggle-btn" id="themeToggle">&#9682; ТЕМЫ</button>
+        <div class="theme-dropdown" id="themeDropdown">
+          <button class="theme-option is-active" data-theme="theme-current"><span class="swatch sw-current"></span>Мятная</button>
+          <button class="theme-option" data-theme="theme-mint"><span class="swatch sw-mint"></span>Кобальт</button>
+          <button class="theme-option" data-theme="theme-glass"><span class="swatch sw-glass"></span>Графит</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ФИЛЬТРЫ: тип выборов -->
+  <div class="crow">
+    <button class="nbtn on" id="btn-pres" onclick="setType('president')">Президент</button>
+    <button class="nbtn" id="btn-duma" onclick="setType('duma')">Государственная Дума</button>
+  </div>
+
+  <!-- РАБОЧАЯ ОБЛАСТЬ -->
+  <div id="app">
+    <!-- Вкладки -->
+    <div class="tabs">
+      <button class="tab-btn on" id="tab-turnout" onclick="setTab('turnout')">Явка</button>
+      <button class="tab-btn" id="tab-results" onclick="setTab('results')">Результаты</button>
+    </div>
+
+    <!-- Графики -->
+    <div class="chart-panels">
+
+      <!-- ЯВКА -->
+      <div class="chart-panel on" id="panel-turnout">
+        <div class="chart-title">Явка избирателей, %</div>
+        <div class="chart-box">
+          <canvas id="chartTurnout"></canvas>
+        </div>
+      </div>
+
+      <!-- РЕЗУЛЬТАТЫ -->
+      <div class="chart-panel" id="panel-results">
+        <div class="chart-title" id="results-title">Результаты последних выборов, %</div>
+        <div class="chart-box">
+          <canvas id="chartResults"></canvas>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<footer class="footer">&copy;&nbsp;<span id="year"></span>&nbsp;&nbsp;Информационно-аналитическое управление</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="../JS/theme.js"></script>
+<script>
+(function () {
+"use strict";
+
+/* ── Fallback данные ── */
+var FB_TURNOUT = {
+  president: [
+    {label:"1991",turnout:74.66},{label:"1996 (1т)",turnout:69.81},
+    {label:"1996 (2т)",turnout:68.88},{label:"2000",turnout:68.74},
+    {label:"2004",turnout:64.38},{label:"2008",turnout:69.70},
+    {label:"2012",turnout:65.34},{label:"2018",turnout:67.47},
+    {label:"2024",turnout:77.44}
+  ],
+  duma: [
+    {label:"1993",turnout:54.81},{label:"1995",turnout:64.76},
+    {label:"1999",turnout:61.85},{label:"2003",turnout:55.75},
+    {label:"2007",turnout:63.71},{label:"2011",turnout:60.21},
+    {label:"2016",turnout:47.88},{label:"2021",turnout:51.72}
+  ]
+};
+var FB_PRES_LAST = {
+  year: 2024, title: "Выборы Президента РФ 2024",
+  candidates: [
+    {name:"Путин В.В.",     pct:87.28, color:"#1565C0"},
+    {name:"Харитонов Н.М.",pct:4.31,  color:"#e53935"},
+    {name:"Даванков В.А.", pct:3.85,  color:"#4CAF50"},
+    {name:"Слуцкий Л.Э.",  pct:3.20,  color:"#FF9800"}
+  ]
+};
+var FB_DUMA_LAST = {
+  year: 2021, title: "Государственная Дума VIII созыв",
+  parties: [
+    {name:"Единая Россия",  pct:49.82, color:"#1565C0"},
+    {name:"КПРФ",          pct:18.93, color:"#b71c1c"},
+    {name:"ЛДПР",          pct:7.55,  color:"#0D47A1"},
+    {name:"СР — За Правду",pct:7.46,  color:"#4CAF50"},
+    {name:"Новые люди",    pct:5.32,  color:"#00BCD4"},
+    {name:"Прочие",        pct:10.92, color:"#9E9E9E"}
+  ]
+};
+
+/* ── Состояние ── */
+var currentType = 'president';
+var currentTab  = 'turnout';
+var TURNOUT_DATA = null;
+var PRES_DATA    = null;
+var DUMA_DATA    = null;
+var chartT = null; // явка
+var chartR = null; // результаты
+
+/* ── Утилиты ── */
+function cssVar(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim() || '#888';
+}
+function loadJSON(url, fallback, cb) {
+  fetch(url)
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(cb)
+    .catch(function(){ cb(fallback); });
+}
+
+/* ── Инициализация данных ── */
+function init() {
+  loadJSON('../data/turnout.json', FB_TURNOUT, function(d){
+    TURNOUT_DATA = d;
+    if (currentTab === 'turnout') renderTurnout();
+  });
+  loadJSON('../data/president.json', null, function(d){
+    PRES_DATA = d;
+    if (currentType === 'president' && currentTab === 'results') renderResults();
+  });
+  loadJSON('../data/duma.json', null, function(d){
+    DUMA_DATA = d;
+    if (currentType === 'duma' && currentTab === 'results') renderResults();
+  });
+}
+
+/* ── Переключение типа выборов ── */
+function setType(t) {
+  currentType = t;
+  document.getElementById('btn-pres').classList.toggle('on', t === 'president');
+  document.getElementById('btn-duma').classList.toggle('on', t === 'duma');
+  if (currentTab === 'turnout') renderTurnout();
+  else renderResults();
+}
+window.setType = setType;
+
+/* ── Переключение вкладок ── */
+function setTab(t) {
+  currentTab = t;
+  document.getElementById('tab-turnout').classList.toggle('on', t === 'turnout');
+  document.getElementById('tab-results').classList.toggle('on', t === 'results');
+  document.getElementById('panel-turnout').classList.toggle('on', t === 'turnout');
+  document.getElementById('panel-results').classList.toggle('on', t === 'results');
+  if (t === 'turnout') renderTurnout();
+  else renderResults();
+}
+window.setTab = setTab;
+
+/* ── Рендер: Явка ── */
+function renderTurnout() {
+  var src = TURNOUT_DATA || FB_TURNOUT;
+  var rows = currentType === 'president' ? src.president : src.duma;
+  var labels  = rows.map(function(r){ return r.label; });
+  var values  = rows.map(function(r){ return r.turnout; });
+  var accent  = cssVar('--accent-main');
+  var alight  = cssVar('--accent-light');
+  var gridClr = cssVar('--row-bg');
+  var txtClr  = cssVar('--btn-text');
+
+  var canvas = document.getElementById('chartTurnout');
+  if (chartT) { chartT.destroy(); chartT = null; }
+  chartT = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Явка, %',
+        data: values,
+        borderColor: accent,
+        backgroundColor: alight,
+        borderWidth: 2.5,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: accent,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){ return ' ' + ctx.parsed.y.toFixed(2) + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: txtClr, font: { size: 11, weight: '600' } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: {
+            color: txtClr,
+            font: { size: 11 },
+            callback: function(v){ return v + '%'; }
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        }
+      }
+    }
+  });
+}
+
+/* ── Рендер: Результаты ── */
+function renderResults() {
+  var items, titleText;
+  if (currentType === 'president') {
+    var src = PRES_DATA;
+    var last = src ? src[src.length - 1] : FB_PRES_LAST;
+    items = (last.candidates || []).map(function(c){ return {name:c.name, pct:c.pct, color:c.color}; });
+    titleText = last.title || ('Выборы Президента ' + last.year);
+  } else {
+    var src2 = DUMA_DATA;
+    var last2 = src2 ? src2[src2.length - 1] : FB_DUMA_LAST;
+    items = (last2.parties || []).map(function(p){ return {name:p.name, pct:p.pct, color:p.color}; });
+    titleText = last2.convocation ? ('Государственная Дума, ' + last2.convocation + ' (' + last2.year + ')') : ('Госдума ' + last2.year);
+  }
+  document.getElementById('results-title').textContent = titleText + ' — результаты по партийным спискам';
+
+  var txtClr = cssVar('--btn-text');
+  var canvas = document.getElementById('chartResults');
+  if (chartR) { chartR.destroy(); chartR = null; }
+  chartR = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: items.map(function(i){ return i.name; }),
+      datasets: [{
+        data: items.map(function(i){ return i.pct; }),
+        backgroundColor: items.map(function(i){ return i.color; }),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){ return ' ' + ctx.parsed.x.toFixed(2) + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          min: 0, max: 100,
+          ticks: { color: txtClr, font:{size:11}, callback: function(v){ return v+'%'; } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        y: {
+          ticks: { color: txtClr, font:{size:12, weight:'600'} },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  /* Легенда */
+  var leg = document.getElementById('legend');
+  leg.innerHTML = items.map(function(i){
+    return '<div class="leg-item"><span class="leg-dot" style="background:'+i.color+'"></span>'+i.name+' — <b>'+i.pct+'%</b></div>';
+  }).join('');
+}
+
+/* ── Обновление графиков при смене темы ── */
+window.recolorMap = function() {
+  if (currentTab === 'turnout') renderTurnout();
+  else renderResults();
+};
+
+/* ── Старт ── */
+document.addEventListener('DOMContentLoaded', function(){
+  init();
+  renderTurnout();
+});
+
+})();
+</script>
+</body>
+</html>
