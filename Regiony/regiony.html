@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>РЕГИОНЫ</title>
+<link rel="stylesheet" href="../CSS/portal.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+* { font-family: Calibri,'Trebuchet MS',Arial,sans-serif; box-sizing: border-box; }
+#root { position:fixed; inset:0; display:flex; flex-direction:column; background:var(--body-bg); transition:background .35s; }
+
+/* Фильтры */
+.crow { display:flex; align-items:center; height:36px; padding:0 18px; gap:5px; background:var(--row-bg); border-bottom:1px solid rgba(0,0,0,.06); overflow-x:auto; flex-shrink:0; scrollbar-width:thin; transition:background .3s; }
+.crow::-webkit-scrollbar { height:3px; }
+.crow::-webkit-scrollbar-thumb { background:rgba(0,0,0,.15); border-radius:2px; }
+.nbtn { display:inline-flex; align-items:center; height:24px; padding:0 9px; background:var(--btn-bg); color:var(--btn-text); border:1.5px solid transparent; border-radius:4px; font-size:11px; font-weight:700; letter-spacing:.2px; text-transform:uppercase; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:all .13s; }
+.nbtn:hover { border-color:var(--btn-hover-br); color:var(--btn-act-bg); }
+.nbtn.on { background:var(--btn-act-bg); color:var(--btn-act-text); border-color:var(--btn-act-bg); }
+.crow-sep { width:1px; height:20px; background:rgba(0,0,0,.12); flex-shrink:0; margin:0 4px; }
+
+/* Кнопка кандидата — цветная рамка */
+.cbtn { border-color: transparent; }
+.cbtn.on { border-color: var(--cand-color, var(--btn-act-bg)) !important; background: var(--cand-color, var(--btn-act-bg)) !important; }
+
+/* Layout */
+#app { flex:1; display:flex; min-height:0; overflow:hidden; }
+
+/* Левая панель */
+#side { width:280px; min-width:280px; max-width:280px; display:flex; flex-direction:column; border-right:1px solid rgba(0,0,0,.08); background:var(--tile-bg,#fff); overflow:hidden; transition:background .35s; flex-shrink:0; }
+
+/* Инфо-панель */
+#info-panel { padding:14px 16px; border-bottom:1px solid rgba(0,0,0,.07); flex-shrink:0; min-height:110px; }
+#info-panel .info-placeholder { font-size:13px; color:var(--btn-text); opacity:.4; text-align:center; padding:14px 0; }
+.info-name { font-size:15px; font-weight:800; color:var(--btn-text); margin-bottom:6px; line-height:1.3; }
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.info-box { background:var(--row-bg); border-radius:7px; padding:7px 10px; transition:background .3s; }
+.info-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--btn-text); opacity:.5; }
+.info-val { font-size:18px; font-weight:800; color:var(--btn-act-bg); margin-top:1px; }
+.info-sub { font-size:11px; color:var(--btn-text); opacity:.45; }
+
+/* Легенда */
+#legend-panel { padding:10px 16px; border-bottom:1px solid rgba(0,0,0,.07); flex-shrink:0; }
+.leg-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--btn-text); opacity:.45; margin-bottom:6px; }
+.grad-bar { height:14px; border-radius:7px; border:1px solid rgba(0,0,0,.07); transition:background .35s; }
+.grad-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--btn-text); opacity:.55; font-weight:600; margin-top:3px; }
+
+/* Поиск */
+.search-box { padding:8px 14px; border-bottom:1px solid rgba(0,0,0,.06); flex-shrink:0; }
+.search-box input { width:100%; padding:7px 11px; border:1px solid rgba(0,0,0,.1); border-radius:7px; font-size:13px; background:var(--row-bg); color:var(--btn-text); outline:none; transition:all .15s; }
+.search-box input:focus { border-color:var(--btn-act-bg); }
+
+/* Список регионов */
+#region-list { flex:1; overflow-y:auto; padding:4px 0; scrollbar-width:thin; }
+#region-list::-webkit-scrollbar { width:5px; }
+#region-list::-webkit-scrollbar-thumb { background:rgba(0,0,0,.2); border-radius:3px; }
+.rli { display:flex; align-items:center; gap:9px; padding:6px 14px; cursor:pointer; transition:background .12s; }
+.rli:hover { background:var(--row-bg); }
+.rli.active { background:var(--btn-act-bg); }
+.rli.active .rli-name, .rli.active .rli-val { color:var(--btn-act-text) !important; }
+.rli-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.rli-name { font-size:12px; flex:1; color:var(--btn-text); line-height:1.3; }
+.rli-val { font-size:12px; font-weight:700; color:var(--btn-act-bg); flex-shrink:0; }
+.rli-nd { font-size:11px; color:var(--btn-text); opacity:.3; flex-shrink:0; }
+
+/* Карта */
+#map-wrap { flex:1; position:relative; }
+#map { height:100%; width:100%; }
+
+/* Оверлей "нет выборки" */
+#map-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:500; }
+#map-overlay .ov-box { background:rgba(255,255,255,.9); border-radius:12px; padding:20px 28px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,.12); }
+.theme-glass #map-overlay .ov-box { background:rgba(28,28,30,.92); color:#f2f2f7; }
+#map-overlay .ov-ic { font-size:36px; opacity:.4; }
+#map-overlay .ov-txt { font-size:14px; font-weight:700; color:var(--btn-text); opacity:.5; margin-top:6px; }
+</style>
+</head>
+<body class="theme-current">
+<div id="root">
+
+  <!-- ШАПКА -->
+  <header class="header">
+    <div class="header-left">
+      <a href="https://google.com" class="header-btn">Совет Федерации</a>
+      <a href="https://google.com" class="header-btn">ИАУ</a>
+      <a href="../index.html" class="header-btn">← Назад</a>
+      <span class="header-title">РЕГИОНЫ</span>
+    </div>
+    <div class="header-right">
+      <div class="theme-switcher">
+        <button class="theme-toggle-btn" id="themeToggle">&#9682; ТЕМЫ</button>
+        <div class="theme-dropdown" id="themeDropdown">
+          <button class="theme-option is-active" data-theme="theme-current"><span class="swatch sw-current"></span>Мятная</button>
+          <button class="theme-option" data-theme="theme-mint"><span class="swatch sw-mint"></span>Кобальт</button>
+          <button class="theme-option" data-theme="theme-glass"><span class="swatch sw-glass"></span>Графит</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ФИЛЬТРЫ: тип + год -->
+  <div class="crow" id="crow-type">
+    <button class="nbtn on" data-t="Президент">Президент</button>
+    <button class="nbtn" data-t="Государственная Дума">Госдума</button>
+    <button class="nbtn" data-t="Главы регионов">Главы регионов</button>
+    <span class="crow-sep"></span>
+    <span id="crow-years"></span>
+  </div>
+
+  <!-- ФИЛЬТРЫ: поле + (для президента) кандидаты -->
+  <div class="crow" id="crow-field">
+    <button class="nbtn on" data-f="result" id="btn-result">Результат, %</button>
+    <button class="nbtn" data-f="turnout">Явка, %</button>
+    <span class="crow-sep" id="cand-sep" style="display:none"></span>
+    <span id="crow-cands"></span>
+  </div>
+
+  <!-- РАБОЧАЯ ОБЛАСТЬ -->
+  <div id="app">
+
+    <!-- Левая панель -->
+    <div id="side">
+      <div id="info-panel">
+        <div class="info-placeholder" id="info-ph">← Выберите тип и год</div>
+        <div id="info-body" style="display:none">
+          <div class="info-name" id="info-name"></div>
+          <div class="info-grid">
+            <div class="info-box"><div class="info-lbl" id="info-lbl-v">Результат</div><div class="info-val" id="info-val"></div><div class="info-sub" id="info-sub"></div></div>
+            <div class="info-box"><div class="info-lbl" id="info-lbl-a">Явка</div><div class="info-val" id="info-tval"></div><div class="info-sub" id="info-tsub"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="legend-panel">
+        <div class="leg-title" id="leg-title">Нет данных</div>
+        <div class="grad-bar" id="grad-bar"></div>
+        <div class="grad-labels"><span id="leg-min">0%</span><span id="leg-max">100%</span></div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="search" placeholder="Поиск региона..." oninput="filterList(this.value)">
+      </div>
+
+      <div id="region-list"></div>
+    </div>
+
+    <!-- Карта -->
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div id="map-overlay">
+        <div class="ov-box">
+          <div class="ov-ic">🗺</div>
+          <div class="ov-txt">Выберите тип выборов и год</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<footer class="footer">&copy;&nbsp;<span id="year"></span>&nbsp;&nbsp;Информационно-аналитическое управление</footer>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<!-- Данные из vybory_data.js -->
+<script src="../Vybory/vybory_data.js"></script>
+<script src="../JS/theme.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ════════════════════════════════════════
+   СОСТОЯНИЕ
+════════════════════════════════════════ */
+var S = { type: 'Президент', year: null, field: 'result', candIdx: 0 };
+var selectedKey = null;
+var DATA = {};      /* region_key → value (для текущего вида) */
+var ALL_ROWS = [];
+
+/* Данные из president_regions.json */
+var PRES_DATA = null;   /* массив объектов по годам */
+var PRES_MAP  = {};     /* year_int → объект */
+
+/* ════════════════════════════════════════
+   ЗАГРУЗКА president_regions.json
+════════════════════════════════════════ */
+fetch('../data/president_regions.json')
+  .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+  .then(function(d){
+    PRES_DATA = d;
+    PRES_MAP  = {};
+    d.forEach(function(rec){ PRES_MAP[rec.year] = rec; });
+    /* Обновляем карту если уже выбран президентский тип */
+    if (S.type === 'Президент' && S.year) {
+      if (S.field === 'result') buildCandButtons();
+      applyFilter();
+    }
+  })
+  .catch(function(){
+    PRES_DATA = [];
+  });
+
+/* ════════════════════════════════════════
+   LEAFLET КАРТА
+════════════════════════════════════════ */
+var map = L.map('map', {
+  center: [62.5, 95],
+  zoom: 3,
+  zoomControl: true,
+  attributionControl: true
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 8
+}).addTo(map);
+
+var markers = {};
+var regionCoords = buildCoords();
+
+function buildCoords() {
+  return {
+    murmanskaya:[68.97,33.08], kareliya:[63.0,33.0], nenetskiy:[67.6,53.0],
+    chukotskiy:[66.0,172.0], kaliningradskaya:[54.7,20.5], spb:[59.95,30.3],
+    novgorodskaya:[58.52,31.27], vologodskaya:[59.22,39.88], arhangelskaya:[64.5,43.0],
+    komi:[63.9,53.9], yamalo_nenetskiy:[67.0,74.0], krasnoyarskiy:[64.0,93.0],
+    saha:[66.0,129.0], magadanskaya:[59.5,150.8], kamchatskiy:[53.0,158.7],
+    leningradskaya:[60.0,32.0], tverskaya:[57.0,34.0], yaroslavskaya:[57.62,39.85],
+    ivanovskaya:[57.0,41.0], kostromskaya:[57.77,40.93], mariy_el:[56.63,47.88],
+    kirovskaya:[58.6,49.65], permskiy:[58.0,56.25], hmao:[61.0,69.0],
+    tyumenskaya:[57.15,68.0], tomskaya:[58.5,82.0], kemerovskaya:[54.5,87.0],
+    irkutskaya:[54.0,103.0], amurskaya:[53.0,127.5], habarovskiy:[51.0,135.0],
+    pskovskaya:[57.82,28.32], smolenskaya:[54.78,32.05], moskva:[55.75,37.62],
+    moskovskaya:[55.74,37.4], vladimirskaya:[56.13,40.4], nizhegorodskaya:[56.33,44.0],
+    chuvashskaya:[55.8,47.5], tatarstan:[55.8,49.1], udmurtskaya:[57.0,53.2],
+    sverdlovskaya:[57.6,60.6], kurganskaya:[55.45,65.35], novosibirskaya:[54.8,82.9],
+    hakasiya:[53.72,91.43], buryatiya:[53.5,110.0], evreyskaya:[48.5,132.0],
+    sahalinskaya:[50.7,142.7], bryanskaya:[53.25,34.4], kaluzhskaya:[54.5,36.0],
+    orlovskaya:[52.97,36.07], tulskaya:[54.2,37.6], ryazanskaya:[54.63,39.7],
+    mordoviya:[54.43,44.8], ulyanovskaya:[54.3,48.4], samarskaya:[53.2,50.15],
+    bashkortostan:[54.23,56.17], chelyabinskaya:[55.15,61.4], omskaya:[54.99,73.37],
+    altayskiy_kray:[52.7,83.1], tyva:[51.72,94.44], zabaykalskiy:[52.0,117.0],
+    primorskiy:[44.0,134.0], lnr:[48.57,39.34], kurskaya:[51.73,36.18],
+    lipetskaya:[52.6,39.6], tambovskaya:[52.72,41.45], penzenskaya:[53.2,45.0],
+    saratovskaya:[51.53,46.03], orenburgskaya:[51.77,55.1], altay:[50.74,86.22],
+    hersonskaya:[46.63,32.62], zaporozhskaya:[47.85,35.11], dnr:[48.0,37.82],
+    belgorodskaya:[50.6,36.6], voronezhskaya:[51.67,39.2], volgogradskaya:[48.72,44.5],
+    krym:[45.35,34.1], adygeya:[44.6,40.1], krasnodarskiy:[45.04,38.98],
+    rostovskaya:[47.22,39.7], kalmykiya:[46.31,44.26], astrahanskaya:[46.35,48.04],
+    sevastopol:[44.6,33.52], karachaevo_cherk:[43.9,41.74], stavropolskiy:[45.04,41.98],
+    chechenskaya:[43.32,45.7], dagestan:[43.0,47.5], kabardino_balk:[43.5,43.6],
+    severnaya_osetiya:[43.05,44.67], ingushetiya:[43.17,44.82]
+  };
+}
+
+/* ════════════════════════════════════════
+   ДАННЫЕ из vybory_data.js
+════════════════════════════════════════ */
+var REGIONS_MAP = {};
+if (window.REGIONS) {
+  window.REGIONS.forEach(function(r){ REGIONS_MAP[r.key] = r; });
+}
+
+/* Уникальные типы и годы */
+var META = {};
+if (window.DB) {
+  window.DB.forEach(function(row){
+    var t = row[0], y = row[1];
+    if (!META[t]) META[t] = {};
+    META[t][y] = true;
+  });
+}
+
+/* ════════════════════════════════════════
+   ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+════════════════════════════════════════ */
+/* Извлекаем 4-значный год из строки типа "18 марта 2018" */
+function extractYear(s) {
+  if (!s) return null;
+  var m = String(s).match(/\b(19|20)\d{2}\b/);
+  return m ? parseInt(m[0]) : null;
+}
+
+/* Находим запись PRES_DATA по текущему выбранному году */
+function getPresRec() {
+  if (!PRES_DATA || !S.year) return null;
+  var yr = extractYear(S.year);
+  return yr ? (PRES_MAP[yr] || null) : null;
+}
+
+/* Цвет кандидата по индексу */
+function candColor(idx) {
+  var rec = getPresRec();
+  if (!rec || !rec.candidates || !rec.candidates[idx]) return null;
+  return rec.candidates[idx].color || null;
+}
+
+/* ════════════════════════════════════════
+   ИНИЦИАЛИЗАЦИЯ
+════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function(){
+  buildYearButtons('Президент');
+  map.invalidateSize();
+});
+
+/* Кнопки типов */
+document.querySelectorAll('#crow-type .nbtn[data-t]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#crow-type .nbtn[data-t]').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    S.type = btn.dataset.t;
+    S.year = null;
+    S.candIdx = 0;
+    buildYearButtons(S.type);
+    applyFilter();
+  });
+});
+
+/* Кнопки полей */
+document.querySelectorAll('#crow-field .nbtn[data-f]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#crow-field .nbtn[data-f]').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    S.field = btn.dataset.f;
+    /* При переключении на "Результат" — восстанавливаем кандидатов */
+    if (S.field === 'result') {
+      buildCandButtons();
+    } else {
+      hideCandButtons();
+    }
+    if (S.year) applyFilter();
+  });
+});
+
+/* ════════════════════════════════════════
+   КНОПКИ ЛЕТ
+════════════════════════════════════════ */
+function buildYearButtons(type) {
+  var wrap = document.getElementById('crow-years');
+  wrap.innerHTML = '';
+  if (type !== 'Президент') hideCandButtons();
+  if (!type || !META[type]) return;
+  var years = Object.keys(META[type]).sort();
+  years.forEach(function(y, i){
+    var b = document.createElement('button');
+    b.className = 'nbtn' + (i === years.length - 1 ? ' on' : '');
+    b.textContent = y;
+    b.dataset.y = y;
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#crow-years .nbtn').forEach(function(b2){ b2.classList.remove('on'); });
+      b.classList.add('on');
+      S.year = y;
+      S.candIdx = 0;
+      if (S.type === 'Президент' && S.field === 'result') buildCandButtons();
+      applyFilter();
+    });
+    wrap.appendChild(b);
+    if (i === years.length - 1) S.year = y;
+  });
+  /* Строим кандидатов для последнего года */
+  if (type === 'Президент' && S.field === 'result') buildCandButtons();
+  if (years.length > 0) applyFilter();
+}
+
+/* ════════════════════════════════════════
+   КНОПКИ КАНДИДАТОВ (только Президент)
+════════════════════════════════════════ */
+function buildCandButtons() {
+  var wrap = document.getElementById('crow-cands');
+  var sep  = document.getElementById('cand-sep');
+  wrap.innerHTML = '';
+
+  var rec = getPresRec();
+  if (!rec || !rec.candidates || rec.candidates.length === 0) {
+    sep.style.display = 'none';
+    return;
+  }
+
+  sep.style.display = '';
+  rec.candidates.forEach(function(c, idx){
+    var b = document.createElement('button');
+    b.className = 'nbtn cbtn' + (idx === S.candIdx ? ' on' : '');
+    b.textContent = c.name;
+    b.style.setProperty('--cand-color', c.color || 'var(--btn-act-bg)');
+    b.addEventListener('click', function(){
+      wrap.querySelectorAll('.cbtn').forEach(function(bb){ bb.classList.remove('on'); });
+      b.classList.add('on');
+      S.candIdx = idx;
+      applyFilter();
+    });
+    wrap.appendChild(b);
+  });
+}
+
+function hideCandButtons() {
+  document.getElementById('crow-cands').innerHTML = '';
+  document.getElementById('cand-sep').style.display = 'none';
+}
+
+/* ════════════════════════════════════════
+   ПРИМЕНЕНИЕ ФИЛЬТРА — строим DATA
+════════════════════════════════════════ */
+function applyFilter() {
+  if (!S.type || !S.year) return;
+  DATA = {};
+
+  var rec = (S.type === 'Президент') ? getPresRec() : null;
+
+  if (rec) {
+    /* Используем president_regions.json */
+    if (S.field === 'turnout') {
+      /* Явка из детального файла */
+      DATA = Object.assign({}, rec.turnout || {});
+    } else {
+      /* Результат выбранного кандидата */
+      var cand = rec.candidates[S.candIdx] || rec.candidates[0];
+      if (cand) {
+        Object.keys(cand.regions || {}).forEach(function(k){
+          if (cand.regions[k] !== null) DATA[k] = cand.regions[k];
+        });
+      }
+    }
+  } else {
+    /* Используем window.DB для других типов или если PRES_DATA не загружен */
+    if (!window.DB) return;
+    var fieldIdx = S.field === 'result' ? 3 : 4;
+    window.DB.forEach(function(row){
+      if (row[0] === S.type && row[1] === S.year) {
+        DATA[row[2]] = row[fieldIdx] !== null ? +row[fieldIdx] : null;
+      }
+    });
+  }
+
+  renderList('');
+  recolorMarkers();
+  updateLegend();
+  updateOverlay();
+  document.getElementById('info-ph').style.display = '';
+  document.getElementById('info-body').style.display = 'none';
+  selectedKey = null;
+}
+
+/* ════════════════════════════════════════
+   ЦВЕТОВАЯ ШКАЛА
+════════════════════════════════════════ */
+function getRange() {
+  var vals = Object.values(DATA).filter(function(v){ return v !== null && v !== undefined; });
+  if (!vals.length) return {min:0, max:100};
+  return {
+    min: Math.min.apply(null, vals),
+    max: Math.max.apply(null, vals)
+  };
+}
+
+function valueToColor(val, range) {
+  if (val === null || val === undefined) return '#D1D5DB';
+  var t = range.max === range.min ? 0.5 : (val - range.min) / (range.max - range.min);
+
+  /* Для кандидата-победителя — обычная шкала. Для остальных — от серого к цвету кандидата */
+  var useGradient = true;
+  var loColor, hiColor;
+  if (S.type === 'Президент' && S.field === 'result' && PRES_DATA) {
+    var c = candColor(S.candIdx);
+    if (c) {
+      loColor = '#e8eaf6';
+      hiColor = c;
+      useGradient = false;
+    }
+  }
+  if (useGradient) {
+    loColor = getComputedStyle(document.body).getPropertyValue('--map-grad-lo').trim() || '#b2ebf2';
+    hiColor = getComputedStyle(document.body).getPropertyValue('--map-grad-hi').trim() || '#004d5a';
+  }
+  return lerpColor(loColor, hiColor, t);
+}
+
+function lerpColor(a, b, t) {
+  function parse(hex) {
+    hex = hex.replace('#','');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+  }
+  var ca = parse(a), cb = parse(b);
+  var r = Math.round(ca[0] + (cb[0]-ca[0])*t);
+  var g = Math.round(ca[1] + (cb[1]-ca[1])*t);
+  var bv= Math.round(ca[2] + (cb[2]-ca[2])*t);
+  return '#' + [r,g,bv].map(function(x){ return ('0'+x.toString(16)).slice(-2); }).join('');
+}
+
+/* ════════════════════════════════════════
+   МАРКЕРЫ НА КАРТЕ
+════════════════════════════════════════ */
+function recolorMarkers() {
+  var range = getRange();
+  var allKeys = window.REGIONS ? window.REGIONS.map(function(r){ return r.key; }) : Object.keys(regionCoords);
+
+  allKeys.forEach(function(key){
+    var coord = regionCoords[key];
+    if (!coord) return;
+    var val = DATA[key] !== undefined ? DATA[key] : null;
+    var color = valueToColor(val, range);
+    var reg = REGIONS_MAP[key] || {};
+    var name = reg.name || key;
+    var abbr = reg.abbr || key.toUpperCase().slice(0,3);
+
+    if (markers[key]) {
+      markers[key].setStyle({ fillColor: color, color: color });
+      markers[key].setPopupContent(makePopup(name, val, key));
+    } else {
+      var m = L.circleMarker(coord, {
+        radius: 14,
+        fillColor: color,
+        color: color,
+        weight: 1,
+        fillOpacity: 0.82,
+        opacity: 0.5
+      });
+      m.bindPopup(makePopup(name, val, key));
+      m.bindTooltip(abbr, {
+        permanent: true, direction: 'center',
+        className: 'region-label',
+        offset: [0,0]
+      });
+      m.on('click', function(){ selectRegion(key); });
+      m.addTo(map);
+      markers[key] = m;
+    }
+  });
+}
+
+function makePopup(name, val, key) {
+  var valStr = val !== null && val !== undefined ? val.toFixed(2) + '%' : 'нет данных';
+  var lbl = S.field === 'turnout' ? 'Явка' : getCandLabel();
+  return '<b>' + name + '</b><br>' + lbl + ': <b>' + valStr + '</b>';
+}
+
+function getCandLabel() {
+  if (S.type === 'Президент' && PRES_DATA) {
+    var rec = getPresRec();
+    if (rec && rec.candidates) {
+      var c = rec.candidates[S.candIdx] || rec.candidates[0];
+      if (c) return c.name;
+    }
+  }
+  return 'Результат';
+}
+
+/* ════════════════════════════════════════
+   СПИСОК РЕГИОНОВ
+════════════════════════════════════════ */
+function renderList(query) {
+  var range = getRange();
+  var regs = window.REGIONS ? window.REGIONS.slice() : [];
+  query = (query || '').toLowerCase();
+  if (query) {
+    regs = regs.filter(function(r){
+      return r.name.toLowerCase().indexOf(query) !== -1 ||
+             r.abbr.toLowerCase().indexOf(query) !== -1;
+    });
+  }
+  regs.sort(function(a,b){
+    var va = DATA[a.key], vb = DATA[b.key];
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    return vb - va;
+  });
+  ALL_ROWS = regs;
+
+  var html = regs.map(function(r){
+    var val = DATA[r.key];
+    var color = valueToColor(val !== undefined ? val : null, range);
+    var valStr = val !== null && val !== undefined ? val.toFixed(1) + '%' : null;
+    return '<div class="rli' + (selectedKey === r.key ? ' active' : '') +
+      '" data-key="' + r.key + '">' +
+      '<span class="rli-dot" style="background:' + color + '"></span>' +
+      '<span class="rli-name">' + r.name + '</span>' +
+      (valStr ? '<span class="rli-val">' + valStr + '</span>' : '<span class="rli-nd">—</span>') +
+      '</div>';
+  }).join('');
+
+  var listEl = document.getElementById('region-list');
+  listEl.innerHTML = html;
+  listEl.querySelectorAll('.rli').forEach(function(el){
+    el.addEventListener('click', function(){ selectRegion(el.dataset.key); });
+  });
+}
+
+function filterList(q) { renderList(q); }
+window.filterList = filterList;
+
+/* ════════════════════════════════════════
+   ВЫБОР РЕГИОНА
+════════════════════════════════════════ */
+function selectRegion(key) {
+  selectedKey = key;
+  var reg = REGIONS_MAP[key] || {};
+  var val = DATA[key];
+  var valStr = val !== null && val !== undefined ? val.toFixed(2) + '%' : '—';
+
+  document.getElementById('info-ph').style.display = 'none';
+  document.getElementById('info-body').style.display = '';
+  document.getElementById('info-name').textContent = reg.name || key;
+  document.getElementById('info-lbl-v').textContent = S.field === 'turnout' ? 'Явка' : getCandLabel();
+  document.getElementById('info-val').textContent = valStr;
+  document.getElementById('info-sub').textContent = S.type + ', ' + (S.year || '');
+
+  /* Второй блок: явка если показываем результат и наоборот */
+  var altVal = null;
+  var rec = S.type === 'Президент' ? getPresRec() : null;
+  if (rec) {
+    if (S.field === 'result') {
+      altVal = rec.turnout && rec.turnout[key] !== undefined ? rec.turnout[key] : null;
+      document.getElementById('info-lbl-a').textContent = 'Явка';
+      document.getElementById('info-tsub').textContent = 'на этих выборах';
+    } else {
+      /* turnout mode — показать результат первого кандидата */
+      var c0 = rec.candidates && rec.candidates[0];
+      altVal = c0 && c0.regions && c0.regions[key] !== undefined ? c0.regions[key] : null;
+      document.getElementById('info-lbl-a').textContent = c0 ? c0.name : 'Результат';
+      document.getElementById('info-tsub').textContent = 'по партспискам';
+    }
+  } else if (window.DB) {
+    var altField = S.field === 'result' ? 4 : 3;
+    window.DB.forEach(function(row){
+      if (row[0] === S.type && row[1] === S.year && row[2] === key && row[altField] !== null) {
+        altVal = +row[altField];
+      }
+    });
+    document.getElementById('info-lbl-a').textContent = S.field === 'result' ? 'Явка' : 'Результат';
+    document.getElementById('info-tsub').textContent = '';
+  }
+  document.getElementById('info-tval').textContent = altVal !== null ? altVal.toFixed(2) + '%' : '—';
+
+  var coord = regionCoords[key];
+  if (coord) { map.setView(coord, Math.max(map.getZoom(), 5), {animate:true}); }
+
+  renderList(document.getElementById('search').value);
+}
+
+/* ════════════════════════════════════════
+   ЛЕГЕНДА
+════════════════════════════════════════ */
+function updateLegend() {
+  var range = getRange();
+  var lbl;
+  if (S.field === 'turnout') {
+    lbl = 'Явка, %';
+  } else {
+    lbl = getCandLabel();
+  }
+  document.getElementById('leg-title').textContent = lbl + ' — ' + (S.type||'') + ' ' + (S.year||'');
+
+  var useGradient = true;
+  var lo, hi;
+  if (S.type === 'Президент' && S.field === 'result' && PRES_DATA) {
+    var c = candColor(S.candIdx);
+    if (c) { lo = '#e8eaf6'; hi = c; useGradient = false; }
+  }
+  if (useGradient) {
+    lo = getComputedStyle(document.body).getPropertyValue('--map-grad-lo').trim() || '#b2ebf2';
+    hi = getComputedStyle(document.body).getPropertyValue('--map-grad-hi').trim() || '#004d5a';
+  }
+  document.getElementById('grad-bar').style.background = 'linear-gradient(to right,' + lo + ',' + hi + ')';
+  document.getElementById('leg-min').textContent = range.min.toFixed(0) + '%';
+  document.getElementById('leg-max').textContent = range.max.toFixed(0) + '%';
+}
+
+/* ════════════════════════════════════════
+   ОВЕРЛЕЙ
+════════════════════════════════════════ */
+function updateOverlay() {
+  var hasData = Object.keys(DATA).length > 0;
+  document.getElementById('map-overlay').style.display = hasData ? 'none' : 'flex';
+}
+
+/* ════════════════════════════════════════
+   СМЕНА ТЕМЫ
+════════════════════════════════════════ */
+window.recolorMap = function() {
+  if (S.year) { recolorMarkers(); updateLegend(); }
+};
+
+/* ════════════════════════════════════════
+   СТИЛИ LEAFLET
+════════════════════════════════════════ */
+(function injectLeafletStyles(){
+  var style = document.createElement('style');
+  style.textContent = [
+    '.leaflet-control-zoom a { background:var(--tile-bg,#fff) !important; color:var(--btn-text) !important; border-color:rgba(0,0,0,.12) !important; }',
+    '.leaflet-popup-content-wrapper { background:var(--tile-bg,#fff) !important; color:var(--btn-text) !important; }',
+    '.leaflet-popup-tip { background:var(--tile-bg,#fff) !important; }',
+    '.region-label { background:transparent !important; border:none !important; box-shadow:none !important; font-size:8px !important; font-weight:900 !important; color:#fff !important; text-shadow:0 0 3px rgba(0,0,0,.8); padding:0 !important; }'
+  ].join('\n');
+  document.head.appendChild(style);
+})();
+
+})();
+</script>
+</body>
+</html>
